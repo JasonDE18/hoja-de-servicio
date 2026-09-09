@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja de Servicio Técnico</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f8;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background-color: #ffffff;
+            /* RUTA DE TU IMAGEN DE MEMBRETE (Para vista en pantalla) */
+            background-image: url('membrete.png'); 
+            background-repeat: no-repeat;
+            background-position: center top;
+            background-size: 100% 100%;
+
+            width: 100%;
+            max-width: 850px;
+            padding: 40px 40px 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            color: #0056b3;
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .header .folio-box {
+            font-weight: bold;
+            color: #555;
+            font-size: 15px;
+        }
+
+        .header .folio-box input {
+            width: 85px;
+            font-weight: bold;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 4px 6px;
+            color: #0056b3;
+            font-size: 15px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #333;
+            background-color: rgba(238, 242, 245, 0.85);
+            padding: 6px 10px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #0056b3;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #444;
+            margin-bottom: 4px;
+        }
+
+        .form-group input, 
+        .form-group textarea, 
+        .form-group select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            /* Fondo semi-transparente para ver levemente la marca de agua GOVA de fondo */
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        /* Área de Firma */
+        .signature-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        canvas {
+            border: 1px dashed #0056b3;
+            background-color: rgba(250, 250, 250, 0.9);
+            border-radius: 4px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .btn-clear {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .btn-container {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .btn-primary { background-color: #0056b3; }
+        .btn-success { background-color: #28a745; }
+        .btn-secondary { background-color: #6c757d; }
+
+        .btn:hover { opacity: 0.9; }
+
+        .history-section {
+            width: 100%;
+            max-width: 850px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th { background-color: #0056b3; color: white; }
+
+        /* =================================================== */
+        /* --- ESTILOS EXCLUSIVOS PARA IMPRESIÓN (MEMBRETE) --- */
+        /* =================================================== */
+        @media print {
+            @page {
+                size: letter portrait;
+                margin: 0; /* Cero margen para que el membrete llene hasta los bordes */
+            }
+
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: white !important;
+
+                /* IMPRIMIR EL MEMBRETE DIRECTAMENTE EN EL CUERPO DE LA HOJA */
+                background-image: url('membrete.png') !important; 
+                background-repeat: no-repeat !important;
+                background-position: top center !important;
+                background-size: 100% 100% !important; /* Cubrir toda la hoja carta */
+
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .container {
+                background: transparent !important; /* Hacer transparente el contenedor */
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100vh !important; /* Ajustar exactamente al alto de la pantalla impresa */
+                
+                /* Márgenes internos para librar el diseño de tu membrete (encabezado y pie) */
+                padding: 38mm 18mm 28mm 18mm !important; 
+                box-sizing: border-box !important;
+
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            .section-title {
+                margin-top: 6px !important;
+                margin-bottom: 4px !important;
+                padding: 3px 6px !important;
+                font-size: 12px !important;
+            }
+
+            .form-group label {
+                font-size: 10px !important;
+                margin-bottom: 2px !important;
+            }
+
+            .form-group input, 
+            .form-group textarea, 
+            .form-group select {
+                padding: 4px 6px !important;
+                font-size: 11px !important;
+                border: 1px solid #aaa !important;
+                background: rgba(255, 255, 255, 0.85) !important;
+            }
+
+            .form-group textarea {
+                min-height: 40px !important;
+            }
+
+            .header {
+                margin-bottom: 6px !important;
+                padding-bottom: 4px !important;
+            }
+
+            .header .folio-box input {
+                border: none !important;
+                background: transparent !important;
+            }
+
+            /* Reducimos el tamaño de la caja de firma para no tapar los datos del pie de página */
+            canvas {
+                border: 1px solid #000 !important;
+                max-height: 65px !important; 
+                width: 260px !important;
+                background: rgba(255, 255, 255, 0.85) !important;
+            }
+
+            .btn-container, 
+            .btn-clear, 
+            .history-section {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>HOJA DE SERVICIO TÉCNICO</h1>
+            <small style="color: #666;">Gova Comunicaciones</small>
+        </div>
+        <div class="folio-box">
+            Folio: <input type="text" id="folio" readonly>
+        </div>
+    </div>
+
+    <form id="hojaServicio">
+        <!-- 1. DATOS GENERALES -->
+        <div class="section-title">1. Datos Generales</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="fecha">Fecha:</label>
+                <input type="date" id="fecha">
+            </div>
+            <div class="form-group">
+                <label for="cliente">Empresa / Cliente:</label>
+                <input type="text" id="cliente" placeholder="Nombre del cliente">
+            </div>
+            <div class="form-group">
+                <label for="ubicacion">Ubicación / Sucursal:</label>
+                <input type="text" id="ubicacion" placeholder="Ej: Planta Alta / Sucursal Norte">
+            </div>
+            <div class="form-group">
+                <label for="tecnico">Atendido por (Técnico):</label>
+                <input type="text" id="tecnico" placeholder="Nombre del técnico">
+            </div>
+        </div>
+
+        <!-- 2. DESCRIPCIÓN DEL TRABAJO -->
+        <div class="section-title">2. Descripción del Servicio y Trabajos Realizados</div>
+        <div class="form-group">
+            <label for="tipoServicio">Tipo de Servicio:</label>
+            <select id="tipoServicio">
+                <option value="Mantenimiento Preventivo">Mantenimiento Preventivo</option>
+                <option value="Mantenimiento Correctivo">Mantenimiento Correctivo</option>
+                <option value="Instalación / Configuración">Instalación / Configuración</option>
+                <option value="Diagnóstico / Revisión">Diagnóstico / Revisión</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+            <label for="descripcion">Detalle de Actividades / Descripciones:</label>
+            <textarea id="descripcion" placeholder="Describe a detalle las actividades realizadas, equipos revisados o hallazgos..."></textarea>
+        </div>
+
+        <!-- 3. OBSERVACIONES -->
+        <div class="section-title">3. Observaciones / Requerimientos Pendientes</div>
+        <div class="form-group">
+            <label for="observaciones">Observaciones adicionales:</label>
+            <textarea id="observaciones" placeholder="Pendientes, repuestos requeridos o recomendaciones..."></textarea>
+        </div>
+
+        <!-- 4. FIRMA Y CONFORMIDAD -->
+        <div class="section-title">4. Conformidad y Firma</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="recibidoPor">Nombre de quien recibe:</label>
+                <input type="text" id="recibidoPor" placeholder="Nombre y cargo de recepción">
+            </div>
+            <div class="form-group">
+                <label for="estatus">Estatus del servicio:</label>
+                <select id="estatus">
+                    <option value="Conforme / Finalizado">Conforme / Finalizado</option>
+                    <option value="Pendiente de Repuesto">Pendiente de Repuesto</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 8px;">
+            <label>Firma de Conformidad:</label>
+            <div class="signature-container">
+                <canvas id="signatureCanvas" width="380" height="110"></canvas>
+                <button type="button" class="btn-clear" onclick="limpiarFirma()">Limpiar Firma</button>
+            </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="btn-container">
+            <button type="button" class="btn btn-secondary" onclick="nuevoReporte()">Nuevo Reporte</button>
+            <button type="button" class="btn btn-success" onclick="guardarReporte()">Guardar Reporte</button>
+            <button type="button" class="btn btn-primary" onclick="window.print()">Imprimir / Guardar PDF</button>
+        </div>
+    </form>
+</div>
+
+<!-- HISTORIAL DE REPORTES GUARDADOS -->
+<div class="history-section">
+    <h2>Reportes Guardados Localmente</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Folio</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Técnico</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="tablaHistorial">
+            <!-- Carga de datos aquí -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // --- FIRMA DIGITAL ---
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    let dibujando = false;
+
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+
+    function obtenerPosicion(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+
+    function iniciarDibujo(e) {
+        dibujando = true;
+        const pos = obtenerPosicion(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+
+    function dibujar(e) {
+        if (!dibujando) return;
+        const pos = obtenerPosicion(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
+
+    function detenerDibujo() {
+        dibujando = false;
+    }
+
+    canvas.addEventListener('mousedown', iniciarDibujo);
+    canvas.addEventListener('mousemove', dibujar);
+    canvas.addEventListener('mouseup', detenerDibujo);
+    canvas.addEventListener('mouseleave', detenerDibujo);
+
+    canvas.addEventListener('touchstart', iniciarDibujo);
+    canvas.addEventListener('touchmove', dibujar);
+    canvas.addEventListener('touchend', detenerDibujo);
+
+    function limpiarFirma() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // --- AUTOINCREMENTO Y GUARDADO ---
+    function formatearFolio(num) {
+        return String(num).padStart(4, '0');
+    }
+
+    function obtenerSiguienteFolioNum() {
+        const reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
+        if (reportes.length === 0) return 1;
+
+        const numerosFolio = reportes.map(r => parseInt(r.folioNum, 10) || 0);
+        return Math.max(...numerosFolio) + 1;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById('fecha').valueAsDate = new Date();
+        asignarSiguienteFolio();
+        cargarHistorial();
+    });
+
+    function asignarSiguienteFolio() {
+        const siguiente = obtenerSiguienteFolioNum();
+        document.getElementById('folio').value = formatearFolio(siguiente);
+        document.getElementById('folio').dataset.num = siguiente;
+    }
+
+    function guardarReporte() {
+        const folioStr = document.getElementById('folio').value;
+        const folioNum = parseInt(document.getElementById('folio').dataset.num || "1", 10);
+
+        const datosReporte = {
+            folio: folioStr,
+            folioNum: folioNum,
+            fecha: document.getElementById('fecha').value,
+            cliente: document.getElementById('cliente').value,
+            ubicacion: document.getElementById('ubicacion').value,
+            tecnico: document.getElementById('tecnico').value,
+            tipoServicio: document.getElementById('tipoServicio').value,
+            descripcion: document.getElementById('descripcion').value,
+            observaciones: document.getElementById('observaciones').value,
+            recibidoPor: document.getElementById('recibidoPor').value,
+            estatus: document.getElementById('estatus').value,
+            firmaDataURL: canvas.toDataURL()
+        };
+
+        let reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
+        const indexExistente = reportes.findIndex(r => r.folio === folioStr);
+        if (indexExistente !== -1) {
+            reportes[indexExistente] = datosReporte;
+        } else {
+            reportes.push(datosReporte);
+        }
+
+        localStorage.setItem('reportesServicio', JSON.stringify(reportes));
+        alert(`¡Reporte con Folio ${folioStr} guardado correctamente!`);
+        cargarHistorial();
+    }
+
+    function cargarHistorial() {
+        const tabla = document.getElementById('tablaHistorial');
+        tabla.innerHTML = "";
+        const reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
+
+        if (reportes.length === 0) {
+            tabla.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No hay reportes guardados.</td></tr>";
+            return;
+        }
+
+        reportes.sort((a, b) => b.folioNum - a.folioNum);
+
+        reportes.forEach(reporte => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td><b>${reporte.folio}</b></td>
+                <td>${reporte.fecha}</td>
+                <td>${reporte.cliente || '-'}</td>
+                <td>${reporte.tecnico || '-'}</td>
+                <td>
+                    <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer;">Cargar</button>
+                    <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
+                </td>
+            `;
+            tabla.appendChild(fila);
+        });
+    }
+
+    function cargarReporte(folioStr) {
+        const reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
+        const reporte = reportes.find(r => r.folio === folioStr);
+
+        if (reporte) {
+            document.getElementById('folio').value = reporte.folio;
+            document.getElementById('folio').dataset.num = reporte.folioNum;
+            document.getElementById('fecha').value = reporte.fecha;
+            document.getElementById('cliente').value = reporte.cliente;
+            document.getElementById('ubicacion').value = reporte.ubicacion;
+            document.getElementById('tecnico').value = reporte.tecnico;
+            document.getElementById('tipoServicio').value = reporte.tipoServicio;
+            document.getElementById('descripcion').value = reporte.descripcion;
+            document.getElementById('observaciones').value = reporte.observaciones;
+            document.getElementById('recibidoPor').value = reporte.recibidoPor;
+            document.getElementById('estatus').value = reporte.estatus;
+
+            limpiarFirma();
+            if (reporte.firmaDataURL) {
+                const img = new Image();
+                img.src = reporte.firmaDataURL;
+                img.onload = function () {
+                    ctx.drawImage(img, 0, 0);
+                };
+            }
+        }
+    }
+
+    function eliminarReporte(folioStr) {
+        if (confirm(`¿Estás seguro de que deseas eliminar el reporte con Folio ${folioStr}?`)) {
+            let reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
+            reportes = reportes.filter(r => r.folio !== folioStr);
+            localStorage.setItem('reportesServicio', JSON.stringify(reportes));
+            cargarHistorial();
+            if (document.getElementById('folio').value === folioStr) {
+                nuevoReporte();
+            }
+        }
+    }
+
+    function nuevoReporte() {
+        document.getElementById('hojaServicio').reset();
+        document.getElementById('fecha').valueAsDate = new Date();
+        limpiarFirma();
+        asignarSiguienteFolio();
+    }
+</script>
+
+</body>
+</html>
