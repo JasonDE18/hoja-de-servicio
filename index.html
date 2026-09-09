@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hoja de Servicio Técnico</title>
+    
+    <!-- Cargar Firebase SDK (Librerías oficiales de Google) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -108,7 +113,6 @@
             min-height: 70px;
         }
 
-        /* Área de Firma */
         .signature-container {
             display: flex;
             flex-direction: column;
@@ -195,7 +199,6 @@
 
         th { background-color: #0056b3; color: white; }
 
-        /* IMPRESIÓN */
         @media print {
             @page {
                 size: letter portrait;
@@ -369,8 +372,8 @@
 
 <div class="history-section">
     <div class="history-header">
-        <h2 style="margin:0; font-size: 18px;">Historial de Reportes en la Nube (GitHub)</h2>
-        <span id="syncStatus" class="status-sync">🔄 Conectando...</span>
+        <h2 style="margin:0; font-size: 18px;">Historial de Reportes en la Nube</h2>
+        <span id="syncStatus" class="status-sync">🔄 Conectando a Firebase...</span>
     </div>
     <table>
         <thead>
@@ -390,14 +393,22 @@
 
 <script>
     // =========================================================================
-    // CONFIGURACIÓN DE TU BASE DE DATOS EN GITHUB (REEMPLAZA ESTOS 3 VALORES)
+    // PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE (OBTENIDA EN EL PASO 2)
     // =========================================================================
-    const GITHUB_USER = "JasonDE18"; 
-    const GITHUB_REPO = "datos-servicio"; 
-    const GITHUB_TOKEN = "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"; 
-    
-    // Ruta base de la API de GitHub
-    const API_BASE = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`;
+    const firebaseConfig = {
+        apiKey: "AIzaSyB05rGegao1b4z6xScNwz1uphbSJiDgorE",
+        authDomain: "hoja-de-servicio-3289.firebaseapp.com",
+        databaseURL: "https://hoja-de-servicio-3289-default-rtdb.firebaseio.com/",
+        projectId: "hoja-de-servicio-3289",
+        storageBucket: "hoja-de-servicio-3289.firebasestorage.app",
+        messagingSenderId: "593958652004",
+        appId: "1:593958652004:web:efcef5e2b96d9e028cb771"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const dbRef = db.ref('reportes');
 
     let reportesGlobales = [];
 
@@ -452,74 +463,36 @@
         return String(num).padStart(4, '0');
     }
 
-    // --- INTEGRACIÓN CON API DE GITHUB (GUARDAR Y CARGAR EN LA NUBE) ---
-
+    // --- ESCUCHA EN TIEMPO REAL DE FIREBASE ---
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('fecha').valueAsDate = new Date();
-        cargarHistorialDesdeGitHub();
+        escucharBaseDeDatos();
     });
 
-    // Convierte texto a Base64 con soporte para acentos y caracteres especiales
-    function utf8_to_b64(str) {
-        return window.btoa(unescape(encodeURIComponent(str)));
-    }
-
-    // Convierte Base64 a texto UTF-8
-    function b64_to_utf8(str) {
-        return decodeURIComponent(escape(window.atob(str)));
-    }
-
-    async function cargarHistorialDesdeGitHub() {
+    function escucharBaseDeDatos() {
         const syncStatus = document.getElementById('syncStatus');
-        const tabla = document.getElementById('tablaHistorial');
-        syncStatus.innerText = "🔄 Sincronizando con la nube...";
-
-        try {
-            const res = await fetch(API_BASE, {
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-
-            if (!res.ok) {
-                if(res.status === 404) {
-                    // Si el repositorio aún no tiene archivos JSON
-                    reportesGlobales = [];
-                    actualizarTabla();
-                    asignarSiguienteFolio();
-                    syncStatus.innerText = "☁️ Nube vacía y lista";
-                    return;
-                }
-                throw new Error(`Error en GitHub API: ${res.status}`);
-            }
-
-            const archivos = await res.json();
-            // Filtrar solo los archivos que sean reportes .json
-            const archivosJson = archivos.filter(a => a.name.startsWith("reporte-") && a.name.endsWith(".json"));
-
+        
+        // Se ejecuta automáticamente al abrir y cada vez que alguien guarda/elimina un reporte
+        dbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
             reportesGlobales = [];
 
-            // Descargar el contenido de cada reporte en paralelo
-            const descargas = archivosJson.map(archivo => 
-                fetch(archivo.download_url)
-                    .then(r => r.json())
-                    .then(data => {
-                        data._sha = archivo.sha; // Guardar SHA necesario para actualizar/eliminar
-                        return data;
-                    })
-            );
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    reportesGlobales.push({
+                        _key: key,
+                        ...data[key]
+                    });
+                });
+            }
 
-            reportesGlobales = await Promise.all(descargas);
             actualizarTabla();
             asignarSiguienteFolio();
-            syncStatus.innerText = "✅ Sincronizado con GitHub";
-
-        } catch (error) {
-            console.error("Error al cargar de GitHub:", error);
-            syncStatus.innerText = "❌ Error de conexión con la nube";
-            alert("No se pudo conectar a GitHub. Verifica tus credenciales de GITHUB_USER y GITHUB_TOKEN.");
-        }
+            syncStatus.innerText = "✅ Sincronizado en tiempo real (Firebase)";
+        }, (error) => {
+            console.error("Error de Firebase:", error);
+            syncStatus.innerText = "❌ Error de conexión";
+        });
     }
 
     function asignarSiguienteFolio() {
@@ -536,10 +509,7 @@
         document.getElementById('folio').dataset.num = siguiente;
     }
 
-    async function guardarReporte() {
-        const btnGuardar = document.getElementById('btnGuardar');
-        const syncStatus = document.getElementById('syncStatus');
-
+    function guardarReporte() {
         const folioStr = document.getElementById('folio').value;
         const folioNum = parseInt(document.getElementById('folio').dataset.num || "1", 10);
 
@@ -558,49 +528,15 @@
             firmaDataURL: canvas.toDataURL()
         };
 
-        const fileName = `reporte-${folioStr}.json`;
-        const url = `${API_BASE}/${fileName}`;
-
-        // Verificar si existe para obtener su SHA de actualización
-        const reporteExistente = reportesGlobales.find(r => r.folio === folioStr);
-        let sha = reporteExistente ? reporteExistente._sha : undefined;
-
-        btnGuardar.disabled = true;
-        btnGuardar.innerText = "Guardando en GitHub...";
-        syncStatus.innerText = "⏳ Subiendo reporte a la nube...";
-
-        const bodyData = {
-            message: `Guardar reporte folio ${folioStr}`,
-            content: utf8_to_b64(JSON.stringify(datosReporte, null, 2))
-        };
-
-        if (sha) {
-            bodyData.sha = sha; // Para sobrescribir el archivo si ya existía
-        }
-
-        try {
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(bodyData)
+        // Guardar usando el folio como clave única
+        db.ref('reportes/' + folioStr).set(datosReporte)
+            .then(() => {
+                alert(`¡Reporte con Folio ${folioStr} guardado en la nube!`);
+            })
+            .catch((error) => {
+                console.error("Error al guardar:", error);
+                alert("Hubo un error al guardar en la nube.");
             });
-
-            if (!response.ok) throw new Error("Error al guardar archivo en GitHub");
-
-            alert(`¡Reporte con Folio ${folioStr} guardado exitosamente en la nube!`);
-            await cargarHistorialDesdeGitHub();
-
-        } catch (error) {
-            console.error("Error al guardar:", error);
-            alert("Hubo un fallo al subir el reporte a GitHub.");
-            syncStatus.innerText = "❌ Fallo al guardar";
-        } finally {
-            btnGuardar.disabled = false;
-            btnGuardar.innerText = "Guardar en la Nube";
-        }
     }
 
     function actualizarTabla() {
@@ -657,43 +593,19 @@
         }
     }
 
-    async function eliminarReporte(folioStr) {
-        const reporte = reportesGlobales.find(r => r.folio === folioStr);
-        if (!reporte) return;
-
-        if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el reporte ${folioStr} de la nube?`)) {
-            const fileName = `reporte-${folioStr}.json`;
-            const url = `${API_BASE}/${fileName}`;
-            const syncStatus = document.getElementById('syncStatus');
-
-            syncStatus.innerText = "⏳ Eliminando de GitHub...";
-
-            try {
-                const response = await fetch(url, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `token ${GITHUB_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `Eliminar reporte folio ${folioStr}`,
-                        sha: reporte._sha
-                    })
+    function eliminarReporte(folioStr) {
+        if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el reporte ${folioStr}?`)) {
+            db.ref('reportes/' + folioStr).remove()
+                .then(() => {
+                    alert(`Reporte ${folioStr} eliminado.`);
+                    if (document.getElementById('folio').value === folioStr) {
+                        nuevoReporte();
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error al eliminar:", error);
+                    alert("No se pudo borrar el reporte.");
                 });
-
-                if (!response.ok) throw new Error("No se pudo eliminar de GitHub");
-
-                alert(`Reporte ${folioStr} eliminado de la nube.`);
-                await cargarHistorialDesdeGitHub();
-                if (document.getElementById('folio').value === folioStr) {
-                    nuevoReporte();
-                }
-
-            } catch (error) {
-                console.error("Error al eliminar:", error);
-                alert("No se pudo borrar el reporte de la nube.");
-                syncStatus.innerText = "❌ Fallo al eliminar";
-            }
         }
     }
 
@@ -704,9 +616,6 @@
         asignarSiguienteFolio();
     }
 </script>
-
-</body>
-</html>
 
 </body>
 </html>
