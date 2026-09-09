@@ -20,7 +20,6 @@
 
         .container {
             background-color: #ffffff;
-            /* RUTA DE TU IMAGEN DE MEMBRETE (Para vista en pantalla) */
             background-image: url('membrete.png'); 
             background-repeat: no-repeat;
             background-position: center top;
@@ -101,7 +100,6 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 13px;
-            /* Fondo semi-transparente para ver levemente la marca de agua GOVA de fondo */
             background-color: rgba(255, 255, 255, 0.9);
         }
 
@@ -169,6 +167,19 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .status-sync {
+            font-size: 12px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -184,13 +195,11 @@
 
         th { background-color: #0056b3; color: white; }
 
-        /* =================================================== */
-        /* --- ESTILOS EXCLUSIVOS PARA IMPRESIÓN (MEMBRETE) --- */
-        /* =================================================== */
+        /* IMPRESIÓN */
         @media print {
             @page {
                 size: letter portrait;
-                margin: 0; /* Cero margen para que el membrete llene hasta los bordes */
+                margin: 0;
             }
 
             html, body {
@@ -199,30 +208,24 @@
                 margin: 0 !important;
                 padding: 0 !important;
                 background-color: white !important;
-
-                /* IMPRIMIR EL MEMBRETE DIRECTAMENTE EN EL CUERPO DE LA HOJA */
                 background-image: url('membrete.png') !important; 
                 background-repeat: no-repeat !important;
                 background-position: top center !important;
-                background-size: 100% 100% !important; /* Cubrir toda la hoja carta */
-
+                background-size: 100% 100% !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
 
             .container {
-                background: transparent !important; /* Hacer transparente el contenedor */
+                background: transparent !important;
                 box-shadow: none !important;
                 border: none !important;
                 border-radius: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                height: 100vh !important; /* Ajustar exactamente al alto de la pantalla impresa */
-                
-                /* Márgenes internos para librar el diseño de tu membrete (encabezado y pie) */
+                height: 100vh !important;
                 padding: 38mm 18mm 28mm 18mm !important; 
                 box-sizing: border-box !important;
-
                 page-break-inside: avoid;
                 break-inside: avoid;
             }
@@ -262,7 +265,6 @@
                 background: transparent !important;
             }
 
-            /* Reducimos el tamaño de la caja de firma para no tapar los datos del pie de página */
             canvas {
                 border: 1px solid #000 !important;
                 max-height: 65px !important; 
@@ -292,7 +294,6 @@
     </div>
 
     <form id="hojaServicio">
-        <!-- 1. DATOS GENERALES -->
         <div class="section-title">1. Datos Generales</div>
         <div class="form-grid">
             <div class="form-group">
@@ -313,7 +314,6 @@
             </div>
         </div>
 
-        <!-- 2. DESCRIPCIÓN DEL TRABAJO -->
         <div class="section-title">2. Descripción del Servicio y Trabajos Realizados</div>
         <div class="form-group">
             <label for="tipoServicio">Tipo de Servicio:</label>
@@ -327,17 +327,15 @@
 
         <div class="form-group" style="margin-top: 10px;">
             <label for="descripcion">Detalle de Actividades / Descripciones:</label>
-            <textarea id="descripcion" placeholder="Describe a detalle las actividades realizadas, equipos revisados o hallazgos..."></textarea>
+            <textarea id="descripcion" placeholder="Describe a detalle las actividades realizadas..."></textarea>
         </div>
 
-        <!-- 3. OBSERVACIONES -->
         <div class="section-title">3. Observaciones / Requerimientos Pendientes</div>
         <div class="form-group">
             <label for="observaciones">Observaciones adicionales:</label>
-            <textarea id="observaciones" placeholder="Pendientes, repuestos requeridos o recomendaciones..."></textarea>
+            <textarea id="observaciones" placeholder="Pendientes o recomendaciones..."></textarea>
         </div>
 
-        <!-- 4. FIRMA Y CONFORMIDAD -->
         <div class="section-title">4. Conformidad y Firma</div>
         <div class="form-grid">
             <div class="form-group">
@@ -361,18 +359,19 @@
             </div>
         </div>
 
-        <!-- BOTONES -->
         <div class="btn-container">
             <button type="button" class="btn btn-secondary" onclick="nuevoReporte()">Nuevo Reporte</button>
-            <button type="button" class="btn btn-success" onclick="guardarReporte()">Guardar Reporte</button>
+            <button type="button" class="btn btn-success" id="btnGuardar" onclick="guardarReporte()">Guardar en la Nube</button>
             <button type="button" class="btn btn-primary" onclick="window.print()">Imprimir / Guardar PDF</button>
         </div>
     </form>
 </div>
 
-<!-- HISTORIAL DE REPORTES GUARDADOS -->
 <div class="history-section">
-    <h2>Reportes Guardados Localmente</h2>
+    <div class="history-header">
+        <h2 style="margin:0; font-size: 18px;">Historial de Reportes en la Nube (GitHub)</h2>
+        <span id="syncStatus" class="status-sync">🔄 Conectando...</span>
+    </div>
     <table>
         <thead>
             <tr>
@@ -384,12 +383,24 @@
             </tr>
         </thead>
         <tbody id="tablaHistorial">
-            <!-- Carga de datos aquí -->
+            <!-- Carga dinámica -->
         </tbody>
     </table>
 </div>
 
 <script>
+    // =========================================================================
+    // CONFIGURACIÓN DE TU BASE DE DATOS EN GITHUB (REEMPLAZA ESTOS 3 VALORES)
+    // =========================================================================
+    const GITHUB_USER = "JasonDE18"; 
+    const GITHUB_REPO = "datos-servicio"; 
+    const GITHUB_TOKEN = "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"; 
+    
+    // Ruta base de la API de GitHub
+    const API_BASE = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`;
+
+    let reportesGlobales = [];
+
     // --- FIRMA DIGITAL ---
     const canvas = document.getElementById('signatureCanvas');
     const ctx = canvas.getContext('2d');
@@ -422,9 +433,7 @@
         ctx.stroke();
     }
 
-    function detenerDibujo() {
-        dibujando = false;
-    }
+    function detenerDibujo() { dibujando = false; }
 
     canvas.addEventListener('mousedown', iniciarDibujo);
     canvas.addEventListener('mousemove', dibujar);
@@ -439,32 +448,98 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    // --- AUTOINCREMENTO Y GUARDADO ---
     function formatearFolio(num) {
         return String(num).padStart(4, '0');
     }
 
-    function obtenerSiguienteFolioNum() {
-        const reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
-        if (reportes.length === 0) return 1;
-
-        const numerosFolio = reportes.map(r => parseInt(r.folioNum, 10) || 0);
-        return Math.max(...numerosFolio) + 1;
-    }
+    // --- INTEGRACIÓN CON API DE GITHUB (GUARDAR Y CARGAR EN LA NUBE) ---
 
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('fecha').valueAsDate = new Date();
-        asignarSiguienteFolio();
-        cargarHistorial();
+        cargarHistorialDesdeGitHub();
     });
 
+    // Convierte texto a Base64 con soporte para acentos y caracteres especiales
+    function utf8_to_b64(str) {
+        return window.btoa(unescape(encodeURIComponent(str)));
+    }
+
+    // Convierte Base64 a texto UTF-8
+    function b64_to_utf8(str) {
+        return decodeURIComponent(escape(window.atob(str)));
+    }
+
+    async function cargarHistorialDesdeGitHub() {
+        const syncStatus = document.getElementById('syncStatus');
+        const tabla = document.getElementById('tablaHistorial');
+        syncStatus.innerText = "🔄 Sincronizando con la nube...";
+
+        try {
+            const res = await fetch(API_BASE, {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (!res.ok) {
+                if(res.status === 404) {
+                    // Si el repositorio aún no tiene archivos JSON
+                    reportesGlobales = [];
+                    actualizarTabla();
+                    asignarSiguienteFolio();
+                    syncStatus.innerText = "☁️ Nube vacía y lista";
+                    return;
+                }
+                throw new Error(`Error en GitHub API: ${res.status}`);
+            }
+
+            const archivos = await res.json();
+            // Filtrar solo los archivos que sean reportes .json
+            const archivosJson = archivos.filter(a => a.name.startsWith("reporte-") && a.name.endsWith(".json"));
+
+            reportesGlobales = [];
+
+            // Descargar el contenido de cada reporte en paralelo
+            const descargas = archivosJson.map(archivo => 
+                fetch(archivo.download_url)
+                    .then(r => r.json())
+                    .then(data => {
+                        data._sha = archivo.sha; // Guardar SHA necesario para actualizar/eliminar
+                        return data;
+                    })
+            );
+
+            reportesGlobales = await Promise.all(descargas);
+            actualizarTabla();
+            asignarSiguienteFolio();
+            syncStatus.innerText = "✅ Sincronizado con GitHub";
+
+        } catch (error) {
+            console.error("Error al cargar de GitHub:", error);
+            syncStatus.innerText = "❌ Error de conexión con la nube";
+            alert("No se pudo conectar a GitHub. Verifica tus credenciales de GITHUB_USER y GITHUB_TOKEN.");
+        }
+    }
+
     function asignarSiguienteFolio() {
-        const siguiente = obtenerSiguienteFolioNum();
+        if (reportesGlobales.length === 0) {
+            document.getElementById('folio').value = "0001";
+            document.getElementById('folio').dataset.num = "1";
+            return;
+        }
+
+        const numeros = reportesGlobales.map(r => parseInt(r.folioNum, 10) || 0);
+        const maxFolio = Math.max(...numeros);
+        const siguiente = maxFolio + 1;
         document.getElementById('folio').value = formatearFolio(siguiente);
         document.getElementById('folio').dataset.num = siguiente;
     }
 
-    function guardarReporte() {
+    async function guardarReporte() {
+        const btnGuardar = document.getElementById('btnGuardar');
+        const syncStatus = document.getElementById('syncStatus');
+
         const folioStr = document.getElementById('folio').value;
         const folioNum = parseInt(document.getElementById('folio').dataset.num || "1", 10);
 
@@ -483,32 +558,63 @@
             firmaDataURL: canvas.toDataURL()
         };
 
-        let reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
-        const indexExistente = reportes.findIndex(r => r.folio === folioStr);
-        if (indexExistente !== -1) {
-            reportes[indexExistente] = datosReporte;
-        } else {
-            reportes.push(datosReporte);
+        const fileName = `reporte-${folioStr}.json`;
+        const url = `${API_BASE}/${fileName}`;
+
+        // Verificar si existe para obtener su SHA de actualización
+        const reporteExistente = reportesGlobales.find(r => r.folio === folioStr);
+        let sha = reporteExistente ? reporteExistente._sha : undefined;
+
+        btnGuardar.disabled = true;
+        btnGuardar.innerText = "Guardando en GitHub...";
+        syncStatus.innerText = "⏳ Subiendo reporte a la nube...";
+
+        const bodyData = {
+            message: `Guardar reporte folio ${folioStr}`,
+            content: utf8_to_b64(JSON.stringify(datosReporte, null, 2))
+        };
+
+        if (sha) {
+            bodyData.sha = sha; // Para sobrescribir el archivo si ya existía
         }
 
-        localStorage.setItem('reportesServicio', JSON.stringify(reportes));
-        alert(`¡Reporte con Folio ${folioStr} guardado correctamente!`);
-        cargarHistorial();
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(bodyData)
+            });
+
+            if (!response.ok) throw new Error("Error al guardar archivo en GitHub");
+
+            alert(`¡Reporte con Folio ${folioStr} guardado exitosamente en la nube!`);
+            await cargarHistorialDesdeGitHub();
+
+        } catch (error) {
+            console.error("Error al guardar:", error);
+            alert("Hubo un fallo al subir el reporte a GitHub.");
+            syncStatus.innerText = "❌ Fallo al guardar";
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerText = "Guardar en la Nube";
+        }
     }
 
-    function cargarHistorial() {
+    function actualizarTabla() {
         const tabla = document.getElementById('tablaHistorial');
         tabla.innerHTML = "";
-        const reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
 
-        if (reportes.length === 0) {
-            tabla.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No hay reportes guardados.</td></tr>";
+        if (reportesGlobales.length === 0) {
+            tabla.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No hay reportes guardados en la nube.</td></tr>";
             return;
         }
 
-        reportes.sort((a, b) => b.folioNum - a.folioNum);
+        reportesGlobales.sort((a, b) => b.folioNum - a.folioNum);
 
-        reportes.forEach(reporte => {
+        reportesGlobales.forEach(reporte => {
             const fila = document.createElement('tr');
             fila.innerHTML = `
                 <td><b>${reporte.folio}</b></td>
@@ -525,8 +631,7 @@
     }
 
     function cargarReporte(folioStr) {
-        const reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
-        const reporte = reportes.find(r => r.folio === folioStr);
+        const reporte = reportesGlobales.find(r => r.folio === folioStr);
 
         if (reporte) {
             document.getElementById('folio').value = reporte.folio;
@@ -552,14 +657,42 @@
         }
     }
 
-    function eliminarReporte(folioStr) {
-        if (confirm(`¿Estás seguro de que deseas eliminar el reporte con Folio ${folioStr}?`)) {
-            let reportes = JSON.parse(localStorage.getItem('reportesServicio')) || [];
-            reportes = reportes.filter(r => r.folio !== folioStr);
-            localStorage.setItem('reportesServicio', JSON.stringify(reportes));
-            cargarHistorial();
-            if (document.getElementById('folio').value === folioStr) {
-                nuevoReporte();
+    async function eliminarReporte(folioStr) {
+        const reporte = reportesGlobales.find(r => r.folio === folioStr);
+        if (!reporte) return;
+
+        if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el reporte ${folioStr} de la nube?`)) {
+            const fileName = `reporte-${folioStr}.json`;
+            const url = `${API_BASE}/${fileName}`;
+            const syncStatus = document.getElementById('syncStatus');
+
+            syncStatus.innerText = "⏳ Eliminando de GitHub...";
+
+            try {
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Eliminar reporte folio ${folioStr}`,
+                        sha: reporte._sha
+                    })
+                });
+
+                if (!response.ok) throw new Error("No se pudo eliminar de GitHub");
+
+                alert(`Reporte ${folioStr} eliminado de la nube.`);
+                await cargarHistorialDesdeGitHub();
+                if (document.getElementById('folio').value === folioStr) {
+                    nuevoReporte();
+                }
+
+            } catch (error) {
+                console.error("Error al eliminar:", error);
+                alert("No se pudo borrar el reporte de la nube.");
+                syncStatus.innerText = "❌ Fallo al eliminar";
             }
         }
     }
