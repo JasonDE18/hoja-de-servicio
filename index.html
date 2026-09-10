@@ -753,6 +753,9 @@
 
         reportesGlobales.sort((a, b) => b.folioNum - a.folioNum);
 
+         // --- <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button> ---
+
+        
         reportesGlobales.forEach(reporte => {
             const fila = document.createElement('tr');
             fila.innerHTML = `
@@ -762,7 +765,7 @@
                 <td>${reporte.tecnico || '-'}</td>
                 <td>
                     <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer;">Cargar</button>
-                    <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
+                    
                 </td>
             `;
             tabla.appendChild(fila);
