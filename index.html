@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hoja de Servicio Técnico - Gova Comunicaciones</title>
     
-    <!-- Cargar SDK de Firebase (Base de Datos + Autenticación Segura) -->
+    <!-- Cargar SDK de Firebase (Base de Datos + Autenticación + Storage) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
     <style>
         * {
@@ -223,6 +224,37 @@
             min-height: 70px;
         }
 
+        /* --- ESTILOS DE EVIDENCIA FOTOGRÁFICA --- */
+        .photos-preview-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .photo-thumb-box {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border: 1px solid #0056b3;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #eee;
+        }
+
+        .photo-thumb-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-thumb-box a {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Área de Firma */
         .signature-container {
             display: flex;
             flex-direction: column;
@@ -329,7 +361,7 @@
                 print-color-adjust: exact !important;
             }
 
-            .session-bar, .login-overlay {
+            .session-bar, .login-overlay, .photo-upload-input {
                 display: none !important;
             }
 
@@ -387,6 +419,11 @@
                 max-height: 65px !important; 
                 width: 260px !important;
                 background: rgba(255, 255, 255, 0.85) !important;
+            }
+
+            .photo-thumb-box {
+                width: 70px !important;
+                height: 70px !important;
             }
 
             .btn-container, 
@@ -466,8 +503,8 @@
         <div class="form-group">
             <label for="tipoServicio">Tipo de Servicio:</label>
             <select id="tipoServicio">
-                <option value="Mantenimiento Preventivo">Mantenimiento Preventivo</option>
-                <option value="Mantenimiento Correctivo">Mantenimiento Correctivo</option>
+                <option value="Mantenimiento Preventivo">Mantenimiento</option>
+                <option value="Servicio Remoto">Servicio Remoto</option>
                 <option value="Instalación / Configuración">Instalación / Configuración</option>
                 <option value="Diagnóstico / Revisión">Diagnóstico / Revisión</option>
             </select>
@@ -478,13 +515,23 @@
             <textarea id="descripcion" placeholder="Describe a detalle las actividades realizadas..."></textarea>
         </div>
 
-        <div class="section-title">3. Observaciones / Requerimientos Pendientes</div>
+        <!-- SECCIÓN DE EVIDENCIA FOTOGRÁFICA -->
+        <div class="section-title">3. Fotos de Evidencia del Servicio</div>
+        <div class="form-group">
+            <label for="inputFotos" class="photo-upload-input">Adjuntar Fotografías (Máx. 5 fotos - Compresión Automática):</label>
+            <input type="file" id="inputFotos" accept="image/*" multiple onchange="previsualizarFotos(event)" class="photo-upload-input">
+            <div id="contenedorVistaPrevia" class="photos-preview-container">
+                <!-- Miniaturas previsualizadas -->
+            </div>
+        </div>
+
+        <div class="section-title">4. Observaciones / Requerimientos Pendientes</div>
         <div class="form-group">
             <label for="observaciones">Observaciones adicionales:</label>
             <textarea id="observaciones" placeholder="Pendientes o recomendaciones..."></textarea>
         </div>
 
-        <div class="section-title">4. Conformidad y Firma</div>
+        <div class="section-title">5. Conformidad y Firma</div>
         <div class="form-grid">
             <div class="form-group">
                 <label for="recibidoPor">Nombre de quien recibe:</label>
@@ -538,7 +585,7 @@
 
 <script>
     // =========================================================================
-    // CONFIGURACIÓN DE FIREBASE (Asegúrate de incluir tu databaseURL)
+    // CONFIGURACIÓN DE FIREBASE (Base de Datos + Auth + Storage)
     // =========================================================================
     const firebaseConfig = {
         apiKey: "AIzaSyB05rGegao1b4z6xScNwz1uphbSJiDgorE",
@@ -550,15 +597,16 @@
         appId: "1:593958652004:web:efcef5e2b96d9e028cb771"
     };
 
-    // Inicializar Firebase, Base de Datos y Autenticación
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
+    const storage = firebase.storage();
     const dbRef = db.ref('reportes');
 
     let reportesGlobales = [];
+    let fotosParaSubir = []; // Array temporal de imágenes seleccionadas
+    let urlsFotosExistentes = []; // URLs cargadas desde Firebase para reportes leídos
 
-    // --- ESCUCHAR ESTADO DE AUTENTICACIÓN GOOGLE/FIREBASE ---
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('fecha').valueAsDate = new Date();
 
@@ -567,11 +615,9 @@
             const usuarioActivoText = document.getElementById('usuarioActivo');
 
             if (user) {
-                // Usuario autenticado exitosamente por Firebase
                 loginOverlay.style.display = 'none';
                 usuarioActivoText.innerText = user.email;
                 
-                // Extraer el nombre previo al @ para rellenar el campo de técnico
                 const nombreSugerido = user.email.split('@')[0];
                 const campoTecnico = document.getElementById('tecnico');
                 if(!campoTecnico.value) {
@@ -580,7 +626,6 @@
 
                 escucharBaseDeDatos();
             } else {
-                // No hay usuario con sesión activa
                 loginOverlay.style.display = 'flex';
                 document.getElementById('syncStatus').innerText = "🔒 Sesión requerida";
             }
@@ -598,7 +643,6 @@
         btnLogin.disabled = true;
         btnLogin.innerText = "Verificando...";
 
-        // Autenticación oficial de Firebase en la nube
         auth.signInWithEmailAndPassword(email, password)
             .then(() => {
                 document.getElementById('password').value = "";
@@ -673,6 +717,90 @@
         return String(num).padStart(4, '0');
     }
 
+    // =========================================================================
+    // LÓGICA DE COMPRESIÓN Y MANEJO DE IMÁGENES
+    // =========================================================================
+
+    function previsualizarFotos(event) {
+        const files = Array.from(event.target.files).slice(0, 3); // Máximo 3 fotos
+        fotosParaSubir = files;
+        urlsFotosExistentes = []; // Limpiar URLs existentes si se seleccionan nuevas
+
+        const contenedor = document.getElementById('contenedorVistaPrevia');
+        contenedor.innerHTML = "";
+
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const box = document.createElement('div');
+                box.className = 'photo-thumb-box';
+                box.innerHTML = `<img src="${e.target.result}" alt="Vista previa">`;
+                contenedor.appendChild(box);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Función que comprime imágenes pesadas usando Canvas antes de subirlas
+    function comprimirImagen(file, maxDimension = 1280, calidad = 0.75) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxDimension || height > maxDimension) {
+                        if (width > height) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        } else {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+                    }
+
+                    const canvasThumb = document.createElement('canvas');
+                    canvasThumb.width = width;
+                    canvasThumb.height = height;
+
+                    const ctxThumb = canvasThumb.getContext('2d');
+                    ctxThumb.drawImage(img, 0, 0, width, height);
+
+                    canvasThumb.toBlob((blob) => {
+                        resolve(blob);
+                    }, 'image/jpeg', calidad);
+                };
+            };
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    async function subirFotosAFirebaseStorage(folioStr) {
+        if (fotosParaSubir.length === 0) return urlsFotosExistentes;
+
+        const urlsSubidas = [];
+
+        for (let i = 0; i < fotosParaSubir.length; i++) {
+            const file = fotosParaSubir[i];
+            // 1. Comprimir la foto en el cliente
+            const fotoComprimidaBlob = await comprimirImagen(file);
+
+            // 2. Subir a Firebase Storage
+            const ruta = `evidencias/reporte_${folioStr}_foto_${i + 1}_${Date.now()}.jpg`;
+            const refStorage = storage.ref(ruta);
+
+            await refStorage.put(fotoComprimidaBlob);
+            const downloadURL = await refStorage.getDownloadURL();
+            urlsSubidas.push(downloadURL);
+        }
+
+        return urlsSubidas;
+    }
+
     // --- BASE DE DATOS EN TIEMPO REAL ---
     function escucharBaseDeDatos() {
         const syncStatus = document.getElementById('syncStatus');
@@ -713,33 +841,46 @@
         document.getElementById('folio').dataset.num = siguiente;
     }
 
-    function guardarReporte() {
+    async function guardarReporte() {
+        const btnGuardar = document.getElementById('btnGuardar');
         const folioStr = document.getElementById('folio').value;
         const folioNum = parseInt(document.getElementById('folio').dataset.num || "1", 10);
 
-        const datosReporte = {
-            folio: folioStr,
-            folioNum: folioNum,
-            fecha: document.getElementById('fecha').value,
-            cliente: document.getElementById('cliente').value,
-            ubicacion: document.getElementById('ubicacion').value,
-            tecnico: document.getElementById('tecnico').value,
-            tipoServicio: document.getElementById('tipoServicio').value,
-            descripcion: document.getElementById('descripcion').value,
-            observaciones: document.getElementById('observaciones').value,
-            recibidoPor: document.getElementById('recibidoPor').value,
-            estatus: document.getElementById('estatus').value,
-            firmaDataURL: canvas.toDataURL()
-        };
+        btnGuardar.disabled = true;
+        btnGuardar.innerText = "Subiendo Fotos y Datos... Espera";
 
-        db.ref('reportes/' + folioStr).set(datosReporte)
-            .then(() => {
-                alert(`¡Reporte con Folio ${folioStr} guardado en la nube!`);
-            })
-            .catch((error) => {
-                console.error("Error al guardar:", error);
-                alert("Hubo un error al guardar en la nube.");
-            });
+        try {
+            // 1. Subir fotos comprimidas a Storage primero
+            const fotosUrls = await subirFotosAFirebaseStorage(folioStr);
+
+            // 2. Armar objeto completo con URLs de fotos
+            const datosReporte = {
+                folio: folioStr,
+                folioNum: folioNum,
+                fecha: document.getElementById('fecha').value,
+                cliente: document.getElementById('cliente').value,
+                ubicacion: document.getElementById('ubicacion').value,
+                tecnico: document.getElementById('tecnico').value,
+                tipoServicio: document.getElementById('tipoServicio').value,
+                descripcion: document.getElementById('descripcion').value,
+                observaciones: document.getElementById('observaciones').value,
+                recibidoPor: document.getElementById('recibidoPor').value,
+                estatus: document.getElementById('estatus').value,
+                fotosUrls: fotosUrls, // Guardar array de URLs de fotos
+                firmaDataURL: canvas.toDataURL()
+            };
+
+            // 3. Guardar en Realtime Database
+            await db.ref('reportes/' + folioStr).set(datosReporte);
+            alert(`¡Reporte con Folio ${folioStr} e imágenes guardado en la nube!`);
+
+        } catch (error) {
+            console.error("Error al guardar:", error);
+            alert("Hubo un error al guardar las fotos o el reporte.");
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerText = "Guardar en la Nube";
+        }
     }
 
     function actualizarTabla() {
@@ -752,20 +893,20 @@
         }
 
         reportesGlobales.sort((a, b) => b.folioNum - a.folioNum);
-
-         // --- <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button> ---
-
+        
+       // <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
         
         reportesGlobales.forEach(reporte => {
+            const tieneFotos = reporte.fotosUrls && reporte.fotosUrls.length > 0 ? " 📷" : "";
             const fila = document.createElement('tr');
             fila.innerHTML = `
-                <td><b>${reporte.folio}</b></td>
+                <td><b>${reporte.folio}</b>${tieneFotos}</td>
                 <td>${reporte.fecha}</td>
                 <td>${reporte.cliente || '-'}</td>
                 <td>${reporte.tecnico || '-'}</td>
                 <td>
                     <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer;">Cargar</button>
-                    
+                   
                 </td>
             `;
             tabla.appendChild(fila);
@@ -787,6 +928,21 @@
             document.getElementById('observaciones').value = reporte.observaciones;
             document.getElementById('recibidoPor').value = reporte.recibidoPor;
             document.getElementById('estatus').value = reporte.estatus;
+
+            // Mostrar fotos guardadas
+            const contenedor = document.getElementById('contenedorVistaPrevia');
+            contenedor.innerHTML = "";
+            fotosParaSubir = [];
+            urlsFotosExistentes = reporte.fotosUrls || [];
+
+            if (urlsFotosExistentes.length > 0) {
+                urlsFotosExistentes.forEach(url => {
+                    const box = document.createElement('div');
+                    box.className = 'photo-thumb-box';
+                    box.innerHTML = `<a href="${url}" target="_blank"><img src="${url}" alt="Evidencia"></a>`;
+                    contenedor.appendChild(box);
+                });
+            }
 
             limpiarFirma();
             if (reporte.firmaDataURL) {
@@ -818,6 +974,9 @@
     function nuevoReporte() {
         document.getElementById('hojaServicio').reset();
         document.getElementById('fecha').valueAsDate = new Date();
+        document.getElementById('contenedorVistaPrevia').innerHTML = "";
+        fotosParaSubir = [];
+        urlsFotosExistentes = [];
         limpiarFirma();
         
         const user = auth.currentUser;
