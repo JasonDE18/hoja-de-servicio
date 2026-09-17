@@ -516,10 +516,17 @@
                 <label for="telefonoCliente">Teléfono Cliente (WhatsApp):</label>
                 <input type="tel" id="telefonoCliente" placeholder="Ej: 9991234567">
             </div>
-            <div class="form-group">
-                <label for="ubicacion">Ubicación / Sucursal:</label>
-                <input type="text" id="ubicacion" placeholder="Ej: Planta Alta / Sucursal Norte">
-            </div>
+           <div class="form-group">
+    <label for="ubicacion">Ubicación / Sucursal:</label>
+    <div style="display: flex; gap: 5px;">
+        <input type="text" id="ubicacion" placeholder="Ej: Planta Alta / Sucursal Norte" style="flex: 1;">
+        <button type="button" class="btn btn-secondary" onclick="obtenerUbicacionGPS()" title="Obtener coordenadas GPS" style="padding: 8px 10px; font-size: 12px;">
+            📍 GPS
+        </button>
+    </div>
+    <input type="hidden" id="urlMaps">
+    <small id="statusGPS" style="font-size: 11px; color: #28a745; margin-top: 2px; display: none;"></small>
+</div>
             <div class="form-group">
                 <label for="tecnico">Atendido por (Técnico):</label>
                 <input type="text" id="tecnico" placeholder="Nombre del técnico">
@@ -1151,6 +1158,47 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // --- OBTENER COORDENADAS GPS Y GENERAR LINK DE GOOGLE MAPS ---
+function obtenerUbicacionGPS() {
+    const statusGPS = document.getElementById('statusGPS');
+    
+    if (!navigator.geolocation) {
+        alert("Tu navegador o dispositivo no soporta geolocalización.");
+        return;
+    }
+
+    statusGPS.style.display = 'block';
+    statusGPS.style.color = '#0056b3';
+    statusGPS.innerText = "⏳ Obteniendo ubicación...";
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Generar URL directa de Google Maps
+            const urlMaps = `https://www.google.com/maps?q=${lat},${lng}`;
+            
+            document.getElementById('urlMaps').value = urlMaps;
+            
+            // Si el campo de texto está vacío, sugerir texto de confirmación
+            const campoUbicacion = document.getElementById('ubicacion');
+            if (!campoUbicacion.value) {
+                campoUbicacion.value = "Ubicación GPS registrada";
+            }
+
+            statusGPS.style.color = '#28a745';
+            statusGPS.innerText = "📍 GPS registrado correctamente";
+        },
+        (error) => {
+            console.error("Error al obtener GPS:", error);
+            statusGPS.style.color = '#dc3545';
+            statusGPS.innerText = "❌ No se pudo obtener la ubicación (verifica los permisos).";
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+    
     function eliminarReporte(folioStr) {
         if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el reporte ${folioStr}?`)) {
             db.ref('reportes/' + folioStr).remove()
