@@ -378,7 +378,7 @@
                 print-color-adjust: exact !important;
             }
 
-            .session-bar, .login-overlay, .photo-upload-input {
+            .session-bar, .login-overlay, .photo-upload-input, .btn-gps {
                 display: none !important;
             }
 
@@ -516,17 +516,25 @@
                 <label for="telefonoCliente">Teléfono Cliente (WhatsApp):</label>
                 <input type="tel" id="telefonoCliente" placeholder="Ej: 9991234567">
             </div>
-           <div class="form-group">
-    <label for="ubicacion">Ubicación / Sucursal:</label>
-    <div style="display: flex; gap: 5px;">
-        <input type="text" id="ubicacion" placeholder="Ej: Planta Alta / Sucursal Norte" style="flex: 1;">
-        <button type="button" class="btn btn-secondary" onclick="obtenerUbicacionGPS()" title="Obtener coordenadas GPS" style="padding: 8px 10px; font-size: 12px;">
-            📍 GPS
-        </button>
-    </div>
-    <input type="hidden" id="urlMaps">
-    <small id="statusGPS" style="font-size: 11px; color: #28a745; margin-top: 2px; display: none;"></small>
-</div>
+            
+            <!-- CAMPO DE UBICACIÓN CON BOTÓN GPS INTEGRADOM -->
+            <div class="form-group">
+                <label for="ubicacion">Ubicación / Sucursal:</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="ubicacion" placeholder="Ej: Planta Alta / Sucursal Norte" style="flex: 1;">
+                    <button type="button" class="btn btn-secondary btn-gps" onclick="obtenerUbicacionGPS()" title="Obtener coordenadas GPS" style="padding: 8px 10px; font-size: 12px; white-space: nowrap;">
+                        📍 GPS
+                    </button>
+                </div>
+                <input type="hidden" id="urlMaps">
+                <div id="linkMapsContainer" style="margin-top: 4px; display: none;">
+                    <a id="linkMapsView" href="#" target="_blank" style="font-size: 12px; color: #0056b3; font-weight: bold; text-decoration: underline;">
+                        🗺️ Abrir ubicación en Google Maps
+                    </a>
+                </div>
+                <small id="statusGPS" style="font-size: 11px; color: #28a745; margin-top: 2px; display: none;"></small>
+            </div>
+
             <div class="form-group">
                 <label for="tecnico">Atendido por (Técnico):</label>
                 <input type="text" id="tecnico" placeholder="Nombre del técnico">
@@ -649,6 +657,50 @@
         return Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
     }
 
+    // --- FUNCIÓN DE GEOLOCALIZACIÓN GPS ---
+    function obtenerUbicacionGPS() {
+        const statusGPS = document.getElementById('statusGPS');
+        
+        if (!navigator.geolocation) {
+            alert("Tu navegador o dispositivo no soporta geolocalización.");
+            return;
+        }
+
+        statusGPS.style.display = 'block';
+        statusGPS.style.color = '#0056b3';
+        statusGPS.innerText = "⏳ Obteniendo ubicación GPS...";
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                const urlMaps = `https://www.google.com/maps?q=${lat},${lng}`;
+                document.getElementById('urlMaps').value = urlMaps;
+
+                // Mostrar el link directo
+                const linkContainer = document.getElementById('linkMapsContainer');
+                const linkView = document.getElementById('linkMapsView');
+                linkView.href = urlMaps;
+                linkContainer.style.display = 'block';
+
+                const campoUbicacion = document.getElementById('ubicacion');
+                if (!campoUbicacion.value) {
+                    campoUbicacion.value = `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                }
+
+                statusGPS.style.color = '#28a745';
+                statusGPS.innerText = "📍 GPS registrado correctamente";
+            },
+            (error) => {
+                console.error("Error al obtener GPS:", error);
+                statusGPS.style.color = '#dc3545';
+                statusGPS.innerText = "❌ No se pudo obtener la ubicación (verifica permisos GPS).";
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }
+
     // AUTO-AJUSTE DINÁMICO EN PANTALLA Y SINCRO CON ESPEJO DE IMPRESIÓN
     function autoAjustarTextarea(elemento) {
         if (!elemento) return;
@@ -669,7 +721,7 @@
         window.print();
     }
 
-    // --- ENVIAR RESUMEN + ENLACE SEGURO CON TOKEN VÍA WHATSAPP ---
+    // --- ENVIAR RESUMEN + ENLACE SEGURO VÍA WHATSAPP ---
     function enviarWhatsApp() {
         const folio = document.getElementById('folio').value;
         const cliente = document.getElementById('cliente').value || 'Cliente';
@@ -690,7 +742,6 @@
             telefono = '52' + telefono;
         }
 
-        // Crear URL segura basada en el Token Único
         const urlBase = window.location.origin + window.location.pathname;
         const enlaceReporte = `${urlBase}?token=${token}`;
 
@@ -716,72 +767,70 @@
         window.open(urlWhatsApp, '_blank');
     }
 
-document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById('fecha').valueAsDate = new Date();
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById('fecha').valueAsDate = new Date();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const esCliente = urlParams.has('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const esCliente = urlParams.has('token');
 
-    if (esCliente) {
-        // 1. Ocultar overlays y barras administrativas
-        document.getElementById('loginOverlay').style.display = 'none';
-        if (document.querySelector('.session-bar')) {
-            document.querySelector('.session-bar').style.display = 'none';
-        }
-        if (document.querySelector('.history-section')) {
-            document.querySelector('.history-section').style.display = 'none';
-        }
-
-        // 2. Ocultar botones de acciones y limpiar firma
-        if (document.querySelector('.btn-container')) {
-            document.querySelector('.btn-container').style.display = 'none';
-        }
-        if (document.querySelector('.btn-clear')) {
-            document.querySelector('.btn-clear').style.display = 'none';
-        }
-        if (document.querySelector('.photo-upload-input')) {
-            document.querySelector('.photo-upload-input').style.display = 'none';
-        }
-
-        // 3. Deshabilitar interactividad en la firma (Canvas)
-        const canvasElem = document.getElementById('signatureCanvas');
-        if (canvasElem) {
-            canvasElem.style.pointerEvents = 'none';
-            canvasElem.style.cursor = 'default';
-        }
-
-        // 4. Bloquear edición en todos los campos de texto y selección
-        setTimeout(() => {
-            document.querySelectorAll('input, select, textarea').forEach(elem => {
-                elem.disabled = true;
-            });
-        }, 300);
-
-        escucharBaseDeDatos();
-    } else {
-        // Flujo habitual para el técnico logueado
-        auth.onAuthStateChanged((user) => {
-            const loginOverlay = document.getElementById('loginOverlay');
-            const usuarioActivoText = document.getElementById('usuarioActivo');
-
-            if (user) {
-                loginOverlay.style.display = 'none';
-                usuarioActivoText.innerText = user.email;
-                
-                const nombreSugerido = user.email.split('@')[0];
-                const campoTecnico = document.getElementById('tecnico');
-                if(!campoTecnico.value) {
-                    campoTecnico.value = nombreSugerido.toUpperCase();
-                }
-
-                escucharBaseDeDatos();
-            } else {
-                loginOverlay.style.display = 'flex';
-                document.getElementById('syncStatus').innerText = "🔒 Sesión requerida";
+        if (esCliente) {
+            // Ocultar elementos de administración si accede un cliente
+            document.getElementById('loginOverlay').style.display = 'none';
+            if (document.querySelector('.session-bar')) {
+                document.querySelector('.session-bar').style.display = 'none';
             }
-        });
-    }
-});
+            if (document.querySelector('.history-section')) {
+                document.querySelector('.history-section').style.display = 'none';
+            }
+            if (document.querySelector('.btn-container')) {
+                document.querySelector('.btn-container').style.display = 'none';
+            }
+            if (document.querySelector('.btn-clear')) {
+                document.querySelector('.btn-clear').style.display = 'none';
+            }
+            if (document.querySelector('.photo-upload-input')) {
+                document.querySelector('.photo-upload-input').style.display = 'none';
+            }
+            if (document.querySelector('.btn-gps')) {
+                document.querySelector('.btn-gps').style.display = 'none';
+            }
+
+            const canvasElem = document.getElementById('signatureCanvas');
+            if (canvasElem) {
+                canvasElem.style.pointerEvents = 'none';
+                canvasElem.style.cursor = 'default';
+            }
+
+            setTimeout(() => {
+                document.querySelectorAll('input, select, textarea').forEach(elem => {
+                    elem.disabled = true;
+                });
+            }, 300);
+
+            escucharBaseDeDatos();
+        } else {
+            auth.onAuthStateChanged((user) => {
+                const loginOverlay = document.getElementById('loginOverlay');
+                const usuarioActivoText = document.getElementById('usuarioActivo');
+
+                if (user) {
+                    loginOverlay.style.display = 'none';
+                    usuarioActivoText.innerText = user.email;
+                    
+                    const nombreSugerido = user.email.split('@')[0];
+                    const campoTecnico = document.getElementById('tecnico');
+                    if(!campoTecnico.value) {
+                        campoTecnico.value = nombreSugerido.toUpperCase();
+                    }
+
+                    escucharBaseDeDatos();
+                } else {
+                    loginOverlay.style.display = 'flex';
+                    document.getElementById('syncStatus').innerText = "🔒 Sesión requerida";
+                }
+            });
+        }
+    });
 
     // --- BASE DE DATOS EN TIEMPO REAL ---
     function escucharBaseDeDatos() {
@@ -810,10 +859,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Lector de Token Seguro desde la URL
     function verificarTokenEnURL() {
         const urlParams = new URLSearchParams(window.location.search);
         const tokenParam = urlParams.get('token');
+
         if (tokenParam) {
             const reporteEncontrado = reportesGlobales.find(r => r.token === tokenParam);
             if (reporteEncontrado) {
@@ -829,7 +878,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Si la página ya tiene cargado un reporte existente, mantener su folio
         if (document.getElementById('tokenAcceso').value) return;
 
         const numeros = reportesGlobales.map(r => parseInt(r.folioNum, 10) || 0);
@@ -864,6 +912,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 cliente: document.getElementById('cliente').value,
                 telefonoCliente: document.getElementById('telefonoCliente').value,
                 ubicacion: document.getElementById('ubicacion').value,
+                urlMaps: document.getElementById('urlMaps').value,
                 tecnico: document.getElementById('tecnico').value,
                 tipoServicio: document.getElementById('tipoServicio').value,
                 descripcion: document.getElementById('descripcion').value,
@@ -875,7 +924,7 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             await db.ref('reportes/' + folioStr).set(datosReporte);
-            alert(`¡Reporte con Folio ${folioStr} e imágenes guardado en la nube!`);
+            alert(`¡Reporte con Folio ${folioStr} guardado en la nube!`);
 
         } catch (error) {
             console.error("Error al guardar:", error);
@@ -897,6 +946,19 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('cliente').value = reporte.cliente;
             document.getElementById('telefonoCliente').value = reporte.telefonoCliente || '';
             document.getElementById('ubicacion').value = reporte.ubicacion;
+            
+            // Cargar enlace de Maps si existe
+            const urlMaps = reporte.urlMaps || '';
+            document.getElementById('urlMaps').value = urlMaps;
+            const linkContainer = document.getElementById('linkMapsContainer');
+            const linkView = document.getElementById('linkMapsView');
+            if (urlMaps) {
+                linkView.href = urlMaps;
+                linkContainer.style.display = 'block';
+            } else {
+                linkContainer.style.display = 'none';
+            }
+
             document.getElementById('tecnico').value = reporte.tecnico;
             document.getElementById('tipoServicio').value = reporte.tipoServicio;
 
@@ -939,13 +1001,15 @@ document.addEventListener("DOMContentLoaded", () => {
     function nuevoReporte() {
         document.getElementById('hojaServicio').reset();
         document.getElementById('tokenAcceso').value = '';
+        document.getElementById('urlMaps').value = '';
+        document.getElementById('linkMapsContainer').style.display = 'none';
+        document.getElementById('statusGPS').style.display = 'none';
         document.getElementById('fecha').valueAsDate = new Date();
         document.getElementById('contenedorVistaPrevia').innerHTML = "";
         fotosParaSubir = [];
         urlsFotosExistentes = [];
         limpiarFirma();
 
-        // Limpiar parámetros de la URL sin recargar la página
         window.history.pushState({}, document.title, window.location.pathname);
 
         const descElem = document.getElementById('descripcion');
@@ -1140,65 +1204,24 @@ document.addEventListener("DOMContentLoaded", () => {
         reportesGlobales.sort((a, b) => b.folioNum - a.folioNum);
 
         //<button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
-        
+
         reportesGlobales.forEach(reporte => {
             const tieneFotos = reporte.fotosUrls && reporte.fotosUrls.length > 0 ? " 📷" : "";
+            const tieneGPS = reporte.urlMaps ? " 📍" : "";
             const fila = document.createElement('tr');
             fila.innerHTML = `
-                <td><b>${reporte.folio}</b>${tieneFotos}</td>
+                <td><b>${reporte.folio}</b>${tieneFotos}${tieneGPS}</td>
                 <td>${reporte.fecha}</td>
                 <td>${reporte.cliente || '-'}</td>
                 <td>${reporte.tecnico || '-'}</td>
                 <td>
                     <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer;">Cargar</button>
-                    
                 </td>
             `;
             tabla.appendChild(fila);
         });
     }
 
-    // --- OBTENER COORDENADAS GPS Y GENERAR LINK DE GOOGLE MAPS ---
-function obtenerUbicacionGPS() {
-    const statusGPS = document.getElementById('statusGPS');
-    
-    if (!navigator.geolocation) {
-        alert("Tu navegador o dispositivo no soporta geolocalización.");
-        return;
-    }
-
-    statusGPS.style.display = 'block';
-    statusGPS.style.color = '#0056b3';
-    statusGPS.innerText = "⏳ Obteniendo ubicación...";
-
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            // Generar URL directa de Google Maps
-            const urlMaps = `https://www.google.com/maps?q=${lat},${lng}`;
-            
-            document.getElementById('urlMaps').value = urlMaps;
-            
-            // Si el campo de texto está vacío, sugerir texto de confirmación
-            const campoUbicacion = document.getElementById('ubicacion');
-            if (!campoUbicacion.value) {
-                campoUbicacion.value = "Ubicación GPS registrada";
-            }
-
-            statusGPS.style.color = '#28a745';
-            statusGPS.innerText = "📍 GPS registrado correctamente";
-        },
-        (error) => {
-            console.error("Error al obtener GPS:", error);
-            statusGPS.style.color = '#dc3545';
-            statusGPS.innerText = "❌ No se pudo obtener la ubicación (verifica los permisos).";
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
-}
-    
     function eliminarReporte(folioStr) {
         if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el reporte ${folioStr}?`)) {
             db.ref('reportes/' + folioStr).remove()
