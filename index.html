@@ -710,8 +710,24 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        document.getElementById('fecha').valueAsDate = new Date();
+    document.getElementById('fecha').valueAsDate = new Date();
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const esCliente = urlParams.has('token');
+
+    // Si entra un cliente con enlace seguro, ocultamos elementos administrativos de inmediato
+    if (esCliente) {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.querySelector('.session-bar').style.display = 'none';
+        document.querySelector('.history-section').style.display = 'none';
+        document.getElementById('btnGuardar').style.display = 'none';
+        
+        // Deshabilitar edición de campos para el cliente (Vista solo lectura)
+        document.querySelectorAll('input, select, textarea').forEach(elem => elem.disabled = true);
+        
+        escucharBaseDeDatos();
+    } else {
+        // Flujo normal para el técnico
         auth.onAuthStateChanged((user) => {
             const loginOverlay = document.getElementById('loginOverlay');
             const usuarioActivoText = document.getElementById('usuarioActivo');
@@ -728,18 +744,12 @@
 
                 escucharBaseDeDatos();
             } else {
-                // Si la URL viene con token de cliente, permitimos ver el reporte sin obligar inicio de sesión técnico
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.has('token')) {
-                    loginOverlay.style.display = 'none';
-                    escucharBaseDeDatos();
-                } else {
-                    loginOverlay.style.display = 'flex';
-                    document.getElementById('syncStatus').innerText = "🔒 Sesión requerida";
-                }
+                loginOverlay.style.display = 'flex';
+                document.getElementById('syncStatus').innerText = "🔒 Sesión requerida";
             }
         });
-    });
+    }
+});
 
     // --- BASE DE DATOS EN TIEMPO REAL ---
     function escucharBaseDeDatos() {
