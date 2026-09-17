@@ -226,7 +226,7 @@
             line-height: 1.4;
         }
 
-        /* DIVS ESPEJO PARA IMPRESIÓN (OCULTOS EN PANTALLA) */
+        /* DIVS ESPEJO PARA IMPRESIÓN */
         .print-text-mirror {
             display: none;
             padding: 8px;
@@ -316,6 +316,7 @@
         .btn-primary { background-color: #0056b3; }
         .btn-success { background-color: #28a745; }
         .btn-secondary { background-color: #6c757d; }
+        .btn-whatsapp { background-color: #25D366; }
 
         .btn:hover { opacity: 0.9; }
 
@@ -356,9 +357,7 @@
 
         th { background-color: #0056b3; color: white; }
 
-        /* =========================================================================
-           REGLAS EXCLUSIVAS PARA IMPRESIÓN Y PDF
-           ========================================================================= */
+        /* REGLAS EXCLUSIVAS PARA IMPRESIÓN Y PDF */
         @media print {
             @page {
                 size: letter portrait;
@@ -415,7 +414,6 @@
                 background: rgba(255, 255, 255, 0.85) !important;
             }
 
-            /* OCULTAR TEXTAREAS AL IMPRIMIR Y MOSTRAR LOS DIVS ESPEJO */
             .form-group textarea {
                 display: none !important;
             }
@@ -469,7 +467,7 @@
         <form id="loginForm" onsubmit="validarLogin(event)">
             <div class="login-group">
                 <label for="email">Correo Electrónico:</label>
-                <input type="email" id="email" placeholder="Usuario" required autocomplete="username">
+                <input type="email" id="email" placeholder="usuario@gova.mx" required autocomplete="username">
             </div>
             <div class="login-group">
                 <label for="password">Contraseña:</label>
@@ -499,6 +497,7 @@
         </div>
         <div class="folio-box">
             Folio: <input type="text" id="folio" readonly>
+            <input type="hidden" id="tokenAcceso">
         </div>
     </div>
 
@@ -512,6 +511,10 @@
             <div class="form-group">
                 <label for="cliente">Empresa / Cliente:</label>
                 <input type="text" id="cliente" placeholder="Nombre del cliente">
+            </div>
+            <div class="form-group">
+                <label for="telefonoCliente">Teléfono Cliente (WhatsApp):</label>
+                <input type="tel" id="telefonoCliente" placeholder="Ej: 9991234567">
             </div>
             <div class="form-group">
                 <label for="ubicacion">Ubicación / Sucursal:</label>
@@ -537,7 +540,6 @@
         <div class="form-group" style="margin-top: 10px;">
             <label for="descripcion">Detalle de Actividades / Descripciones:</label>
             <textarea id="descripcion" placeholder="Describe a detalle las actividades realizadas..." oninput="autoAjustarTextarea(this)"></textarea>
-            <!-- Espejo de texto para impresión -->
             <div id="descripcionPrint" class="print-text-mirror"></div>
         </div>
 
@@ -555,7 +557,6 @@
         <div class="form-group">
             <label for="observaciones">Observaciones adicionales:</label>
             <textarea id="observaciones" placeholder="Pendientes o recomendaciones..." oninput="autoAjustarTextarea(this)"></textarea>
-            <!-- Espejo de texto para impresión -->
             <div id="observacionesPrint" class="print-text-mirror"></div>
         </div>
 
@@ -584,6 +585,7 @@
 
         <div class="btn-container">
             <button type="button" class="btn btn-secondary" onclick="nuevoReporte()">Nuevo Reporte</button>
+            <button type="button" class="btn btn-whatsapp" onclick="enviarWhatsApp()">📲 Enviar por WhatsApp</button>
             <button type="button" class="btn btn-success" id="btnGuardar" onclick="guardarReporte()">Guardar en la Nube</button>
             <button type="button" class="btn btn-primary" onclick="imprimirReporte()">Imprimir / Guardar PDF</button>
         </div>
@@ -635,15 +637,18 @@
     let fotosParaSubir = [];
     let urlsFotosExistentes = [];
 
+    // Generar Token Aleatorio Único
+    function generarToken() {
+        return Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+    }
+
     // AUTO-AJUSTE DINÁMICO EN PANTALLA Y SINCRO CON ESPEJO DE IMPRESIÓN
     function autoAjustarTextarea(elemento) {
         if (!elemento) return;
         
-        // Auto-crecer en pantalla
         elemento.style.height = 'auto';
         elemento.style.height = (elemento.scrollHeight + 4) + 'px';
 
-        // Sincronizar el contenido con el div espejo de impresión
         if (elemento.id === 'descripcion') {
             document.getElementById('descripcionPrint').innerText = elemento.value;
         } else if (elemento.id === 'observaciones') {
@@ -652,11 +657,56 @@
     }
 
     function imprimirReporte() {
-        // Asegurar que los espejos tengan el contenido más reciente antes de abrir la vista de impresión
         document.getElementById('descripcionPrint').innerText = document.getElementById('descripcion').value;
         document.getElementById('observacionesPrint').innerText = document.getElementById('observaciones').value;
-        
         window.print();
+    }
+
+    // --- ENVIAR RESUMEN + ENLACE SEGURO CON TOKEN VÍA WHATSAPP ---
+    function enviarWhatsApp() {
+        const folio = document.getElementById('folio').value;
+        const cliente = document.getElementById('cliente').value || 'Cliente';
+        const fecha = document.getElementById('fecha').value;
+        const tipoServicio = document.getElementById('tipoServicio').value;
+        const tecnico = document.getElementById('tecnico').value;
+        const estatus = document.getElementById('estatus').value;
+        let token = document.getElementById('tokenAcceso').value;
+        let telefono = document.getElementById('telefonoCliente').value.trim();
+
+        if (!token) {
+            token = generarToken();
+            document.getElementById('tokenAcceso').value = token;
+        }
+
+        telefono = telefono.replace(/\D/g, '');
+        if (telefono.length === 10) {
+            telefono = '52' + telefono;
+        }
+
+        // Crear URL segura basada en el Token Único
+        const urlBase = window.location.origin + window.location.pathname;
+        const enlaceReporte = `${urlBase}?token=${token}`;
+
+        let mensaje = `*GOVA COMUNICACIONES - HOJA DE SERVICIO*\n\n`;
+        mensaje += `Hola *${cliente}*, te compartimos tu reporte de servicio realizado:\n\n`;
+        mensaje += `📌 *Folio:* ${folio}\n`;
+        mensaje += `📅 *Fecha:* ${fecha}\n`;
+        mensaje += `🛠️ *Servicio:* ${tipoServicio}\n`;
+        mensaje += `👨‍🔧 *Técnico:* ${tecnico}\n`;
+        mensaje += `✅ *Estatus:* ${estatus}\n\n`;
+        mensaje += `📄 *Consulta la Hoja de Servicio completa aquí:*\n${enlaceReporte}\n\n`;
+        mensaje += `Gracias por su preferencia.`;
+
+        const mensajeURL = encodeURIComponent(mensaje);
+        let urlWhatsApp = "";
+
+        if (telefono) {
+            urlWhatsApp = `https://api.whatsapp.com/send?phone=${telefono}&text=${mensajeURL}`;
+        } else {
+            urlWhatsApp = `https://api.whatsapp.com/send?text=${mensajeURL}`;
+        }
+
+        window.open(urlWhatsApp, '_blank');
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -678,11 +728,199 @@
 
                 escucharBaseDeDatos();
             } else {
-                loginOverlay.style.display = 'flex';
-                document.getElementById('syncStatus').innerText = "🔒 Sesión requerida";
+                // Si la URL viene con token de cliente, permitimos ver el reporte sin obligar inicio de sesión técnico
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('token')) {
+                    loginOverlay.style.display = 'none';
+                    escucharBaseDeDatos();
+                } else {
+                    loginOverlay.style.display = 'flex';
+                    document.getElementById('syncStatus').innerText = "🔒 Sesión requerida";
+                }
             }
         });
     });
+
+    // --- BASE DE DATOS EN TIEMPO REAL ---
+    function escucharBaseDeDatos() {
+        const syncStatus = document.getElementById('syncStatus');
+        
+        dbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            reportesGlobales = [];
+
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    reportesGlobales.push({
+                        _key: key,
+                        ...data[key]
+                    });
+                });
+            }
+
+            actualizarTabla();
+            asignarSiguienteFolio();
+            verificarTokenEnURL();
+            syncStatus.innerText = "✅ Sincronizado en tiempo real";
+        }, (error) => {
+            console.error("Error de Firebase:", error);
+            syncStatus.innerText = "❌ Error de conexión";
+        });
+    }
+
+    // Lector de Token Seguro desde la URL
+    function verificarTokenEnURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenParam = urlParams.get('token');
+        if (tokenParam) {
+            const reporteEncontrado = reportesGlobales.find(r => r.token === tokenParam);
+            if (reporteEncontrado) {
+                cargarReporte(reporteEncontrado.folio);
+            }
+        }
+    }
+
+    function asignarSiguienteFolio() {
+        if (reportesGlobales.length === 0) {
+            document.getElementById('folio').value = "0001";
+            document.getElementById('folio').dataset.num = "1";
+            return;
+        }
+
+        // Si la página ya tiene cargado un reporte existente, mantener su folio
+        if (document.getElementById('tokenAcceso').value) return;
+
+        const numeros = reportesGlobales.map(r => parseInt(r.folioNum, 10) || 0);
+        const maxFolio = Math.max(...numeros);
+        const siguiente = maxFolio + 1;
+        document.getElementById('folio').value = formatearFolio(siguiente);
+        document.getElementById('folio').dataset.num = siguiente;
+    }
+
+    async function guardarReporte() {
+        const btnGuardar = document.getElementById('btnGuardar');
+        const folioStr = document.getElementById('folio').value;
+        const folioNum = parseInt(document.getElementById('folio').dataset.num || "1", 10);
+
+        let token = document.getElementById('tokenAcceso').value;
+        if (!token) {
+            token = generarToken();
+            document.getElementById('tokenAcceso').value = token;
+        }
+
+        btnGuardar.disabled = true;
+        btnGuardar.innerText = "Subiendo Fotos y Datos...";
+
+        try {
+            const fotosUrls = await subirFotosAFirebaseStorage(folioStr);
+
+            const datosReporte = {
+                folio: folioStr,
+                folioNum: folioNum,
+                token: token,
+                fecha: document.getElementById('fecha').value,
+                cliente: document.getElementById('cliente').value,
+                telefonoCliente: document.getElementById('telefonoCliente').value,
+                ubicacion: document.getElementById('ubicacion').value,
+                tecnico: document.getElementById('tecnico').value,
+                tipoServicio: document.getElementById('tipoServicio').value,
+                descripcion: document.getElementById('descripcion').value,
+                observaciones: document.getElementById('observaciones').value,
+                recibidoPor: document.getElementById('recibidoPor').value,
+                estatus: document.getElementById('estatus').value,
+                fotosUrls: fotosUrls,
+                firmaDataURL: canvas.toDataURL()
+            };
+
+            await db.ref('reportes/' + folioStr).set(datosReporte);
+            alert(`¡Reporte con Folio ${folioStr} e imágenes guardado en la nube!`);
+
+        } catch (error) {
+            console.error("Error al guardar:", error);
+            alert("Hubo un error al guardar las fotos o el reporte.");
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerText = "Guardar en la Nube";
+        }
+    }
+
+    function cargarReporte(folioStr) {
+        const reporte = reportesGlobales.find(r => r.folio === folioStr);
+
+        if (reporte) {
+            document.getElementById('folio').value = reporte.folio;
+            document.getElementById('folio').dataset.num = reporte.folioNum;
+            document.getElementById('tokenAcceso').value = reporte.token || '';
+            document.getElementById('fecha').value = reporte.fecha;
+            document.getElementById('cliente').value = reporte.cliente;
+            document.getElementById('telefonoCliente').value = reporte.telefonoCliente || '';
+            document.getElementById('ubicacion').value = reporte.ubicacion;
+            document.getElementById('tecnico').value = reporte.tecnico;
+            document.getElementById('tipoServicio').value = reporte.tipoServicio;
+
+            const descElem = document.getElementById('descripcion');
+            const obsElem = document.getElementById('observaciones');
+            descElem.value = reporte.descripcion || '';
+            obsElem.value = reporte.observaciones || '';
+
+            document.getElementById('recibidoPor').value = reporte.recibidoPor;
+            document.getElementById('estatus').value = reporte.estatus;
+
+            autoAjustarTextarea(descElem);
+            autoAjustarTextarea(obsElem);
+
+            const contenedor = document.getElementById('contenedorVistaPrevia');
+            contenedor.innerHTML = "";
+            fotosParaSubir = [];
+            urlsFotosExistentes = reporte.fotosUrls || [];
+
+            if (urlsFotosExistentes.length > 0) {
+                urlsFotosExistentes.forEach(url => {
+                    const box = document.createElement('div');
+                    box.className = 'photo-thumb-box';
+                    box.innerHTML = `<a href="${url}" target="_blank"><img src="${url}" alt="Evidencia"></a>`;
+                    contenedor.appendChild(box);
+                });
+            }
+
+            limpiarFirma();
+            if (reporte.firmaDataURL) {
+                const img = new Image();
+                img.src = reporte.firmaDataURL;
+                img.onload = function () {
+                    ctx.drawImage(img, 0, 0);
+                };
+            }
+        }
+    }
+
+    function nuevoReporte() {
+        document.getElementById('hojaServicio').reset();
+        document.getElementById('tokenAcceso').value = '';
+        document.getElementById('fecha').valueAsDate = new Date();
+        document.getElementById('contenedorVistaPrevia').innerHTML = "";
+        fotosParaSubir = [];
+        urlsFotosExistentes = [];
+        limpiarFirma();
+
+        // Limpiar parámetros de la URL sin recargar la página
+        window.history.pushState({}, document.title, window.location.pathname);
+
+        const descElem = document.getElementById('descripcion');
+        const obsElem = document.getElementById('observaciones');
+        descElem.value = '';
+        obsElem.value = '';
+        autoAjustarTextarea(descElem);
+        autoAjustarTextarea(obsElem);
+        
+        const user = auth.currentUser;
+        if (user) {
+            const nombreSugerido = user.email.split('@')[0];
+            document.getElementById('tecnico').value = nombreSugerido.toUpperCase();
+        }
+
+        asignarSiguienteFolio();
+    }
 
     function validarLogin(e) {
         e.preventDefault();
@@ -769,21 +1007,22 @@
         return String(num).padStart(4, '0');
     }
 
-    // --- LÓGICA DE COMPRESIÓN Y MANEJO DE IMÁGENES ---
+    // --- COMPRESIÓN Y MANEJO DE IMÁGENES ---
     function previsualizarFotos(event) {
         const files = Array.from(event.target.files).slice(0, 5);
         fotosParaSubir = files;
-        urlsFotosExistentes = [];
 
         const contenedor = document.getElementById('contenedorVistaPrevia');
-        contenedor.innerHTML = "";
+        if (urlsFotosExistentes.length === 0) {
+            contenedor.innerHTML = "";
+        }
 
         files.forEach(file => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const box = document.createElement('div');
                 box.className = 'photo-thumb-box';
-                box.innerHTML = `<img src="${e.target.result}" alt="Vista previa">`;
+                box.innerHTML = `<img src="${e.target.result}" alt="Vista previa nueva">`;
                 contenedor.appendChild(box);
             };
             reader.readAsDataURL(file);
@@ -828,102 +1067,23 @@
     }
 
     async function subirFotosAFirebaseStorage(folioStr) {
-        if (fotosParaSubir.length === 0) return urlsFotosExistentes;
+        const urlsFinales = [...urlsFotosExistentes];
 
-        const urlsSubidas = [];
+        if (fotosParaSubir.length > 0) {
+            for (let i = 0; i < fotosParaSubir.length; i++) {
+                const file = fotosParaSubir[i];
+                const fotoComprimidaBlob = await comprimirImagen(file);
 
-        for (let i = 0; i < fotosParaSubir.length; i++) {
-            const file = fotosParaSubir[i];
-            const fotoComprimidaBlob = await comprimirImagen(file);
+                const ruta = `evidencias/reporte_${folioStr}_foto_${urlsFinales.length + i + 1}_${Date.now()}.jpg`;
+                const refStorage = storage.ref(ruta);
 
-            const ruta = `evidencias/reporte_${folioStr}_foto_${i + 1}_${Date.now()}.jpg`;
-            const refStorage = storage.ref(ruta);
-
-            await refStorage.put(fotoComprimidaBlob);
-            const downloadURL = await refStorage.getDownloadURL();
-            urlsSubidas.push(downloadURL);
-        }
-
-        return urlsSubidas;
-    }
-
-    // --- BASE DE DATOS EN TIEMPO REAL ---
-    function escucharBaseDeDatos() {
-        const syncStatus = document.getElementById('syncStatus');
-        
-        dbRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            reportesGlobales = [];
-
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    reportesGlobales.push({
-                        _key: key,
-                        ...data[key]
-                    });
-                });
+                await refStorage.put(fotoComprimidaBlob);
+                const downloadURL = await refStorage.getDownloadURL();
+                urlsFinales.push(downloadURL);
             }
-
-            actualizarTabla();
-            asignarSiguienteFolio();
-            syncStatus.innerText = "✅ Sincronizado en tiempo real";
-        }, (error) => {
-            console.error("Error de Firebase:", error);
-            syncStatus.innerText = "❌ Error de conexión";
-        });
-    }
-
-    function asignarSiguienteFolio() {
-        if (reportesGlobales.length === 0) {
-            document.getElementById('folio').value = "0001";
-            document.getElementById('folio').dataset.num = "1";
-            return;
         }
 
-        const numeros = reportesGlobales.map(r => parseInt(r.folioNum, 10) || 0);
-        const maxFolio = Math.max(...numeros);
-        const siguiente = maxFolio + 1;
-        document.getElementById('folio').value = formatearFolio(siguiente);
-        document.getElementById('folio').dataset.num = siguiente;
-    }
-
-    async function guardarReporte() {
-        const btnGuardar = document.getElementById('btnGuardar');
-        const folioStr = document.getElementById('folio').value;
-        const folioNum = parseInt(document.getElementById('folio').dataset.num || "1", 10);
-
-        btnGuardar.disabled = true;
-        btnGuardar.innerText = "Subiendo Fotos y Datos...";
-
-        try {
-            const fotosUrls = await subirFotosAFirebaseStorage(folioStr);
-
-            const datosReporte = {
-                folio: folioStr,
-                folioNum: folioNum,
-                fecha: document.getElementById('fecha').value,
-                cliente: document.getElementById('cliente').value,
-                ubicacion: document.getElementById('ubicacion').value,
-                tecnico: document.getElementById('tecnico').value,
-                tipoServicio: document.getElementById('tipoServicio').value,
-                descripcion: document.getElementById('descripcion').value,
-                observaciones: document.getElementById('observaciones').value,
-                recibidoPor: document.getElementById('recibidoPor').value,
-                estatus: document.getElementById('estatus').value,
-                fotosUrls: fotosUrls,
-                firmaDataURL: canvas.toDataURL()
-            };
-
-            await db.ref('reportes/' + folioStr).set(datosReporte);
-            alert(`¡Reporte con Folio ${folioStr} e imágenes guardado en la nube!`);
-
-        } catch (error) {
-            console.error("Error al guardar:", error);
-            alert("Hubo un error al guardar las fotos o el reporte.");
-        } finally {
-            btnGuardar.disabled = false;
-            btnGuardar.innerText = "Guardar en la Nube";
-        }
+        return urlsFinales;
     }
 
     function actualizarTabla() {
@@ -937,8 +1097,6 @@
 
         reportesGlobales.sort((a, b) => b.folioNum - a.folioNum);
 
-        // <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
-        
         reportesGlobales.forEach(reporte => {
             const tieneFotos = reporte.fotosUrls && reporte.fotosUrls.length > 0 ? " 📷" : "";
             const fila = document.createElement('tr');
@@ -949,60 +1107,11 @@
                 <td>${reporte.tecnico || '-'}</td>
                 <td>
                     <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer;">Cargar</button>
-                   
+                    <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
                 </td>
             `;
             tabla.appendChild(fila);
         });
-    }
-
-    function cargarReporte(folioStr) {
-        const reporte = reportesGlobales.find(r => r.folio === folioStr);
-
-        if (reporte) {
-            document.getElementById('folio').value = reporte.folio;
-            document.getElementById('folio').dataset.num = reporte.folioNum;
-            document.getElementById('fecha').value = reporte.fecha;
-            document.getElementById('cliente').value = reporte.cliente;
-            document.getElementById('ubicacion').value = reporte.ubicacion;
-            document.getElementById('tecnico').value = reporte.tecnico;
-            document.getElementById('tipoServicio').value = reporte.tipoServicio;
-
-            const descElem = document.getElementById('descripcion');
-            const obsElem = document.getElementById('observaciones');
-            descElem.value = reporte.descripcion || '';
-            obsElem.value = reporte.observaciones || '';
-
-            document.getElementById('recibidoPor').value = reporte.recibidoPor;
-            document.getElementById('estatus').value = reporte.estatus;
-
-            autoAjustarTextarea(descElem);
-            autoAjustarTextarea(obsElem);
-
-            // Mostrar fotos guardadas
-            const contenedor = document.getElementById('contenedorVistaPrevia');
-            contenedor.innerHTML = "";
-            fotosParaSubir = [];
-            urlsFotosExistentes = reporte.fotosUrls || [];
-
-            if (urlsFotosExistentes.length > 0) {
-                urlsFotosExistentes.forEach(url => {
-                    const box = document.createElement('div');
-                    box.className = 'photo-thumb-box';
-                    box.innerHTML = `<a href="${url}" target="_blank"><img src="${url}" alt="Evidencia"></a>`;
-                    contenedor.appendChild(box);
-                });
-            }
-
-            limpiarFirma();
-            if (reporte.firmaDataURL) {
-                const img = new Image();
-                img.src = reporte.firmaDataURL;
-                img.onload = function () {
-                    ctx.drawImage(img, 0, 0);
-                };
-            }
-        }
     }
 
     function eliminarReporte(folioStr) {
@@ -1019,30 +1128,6 @@
                     alert("No se pudo borrar el reporte.");
                 });
         }
-    }
-
-    function nuevoReporte() {
-        document.getElementById('hojaServicio').reset();
-        document.getElementById('fecha').valueAsDate = new Date();
-        document.getElementById('contenedorVistaPrevia').innerHTML = "";
-        fotosParaSubir = [];
-        urlsFotosExistentes = [];
-        limpiarFirma();
-
-        const descElem = document.getElementById('descripcion');
-        const obsElem = document.getElementById('observaciones');
-        descElem.value = '';
-        obsElem.value = '';
-        autoAjustarTextarea(descElem);
-        autoAjustarTextarea(obsElem);
-        
-        const user = auth.currentUser;
-        if (user) {
-            const nombreSugerido = user.email.split('@')[0];
-            document.getElementById('tecnico').value = nombreSugerido.toUpperCase();
-        }
-
-        asignarSiguienteFolio();
     }
 </script>
 
