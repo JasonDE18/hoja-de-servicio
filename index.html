@@ -709,25 +709,50 @@
         window.open(urlWhatsApp, '_blank');
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('fecha').valueAsDate = new Date();
 
     const urlParams = new URLSearchParams(window.location.search);
     const esCliente = urlParams.has('token');
 
-    // Si entra un cliente con enlace seguro, ocultamos elementos administrativos de inmediato
     if (esCliente) {
+        // 1. Ocultar overlays y barras administrativas
         document.getElementById('loginOverlay').style.display = 'none';
-        document.querySelector('.session-bar').style.display = 'none';
-        document.querySelector('.history-section').style.display = 'none';
-        document.getElementById('btnGuardar').style.display = 'none';
-        
-        // Deshabilitar edición de campos para el cliente (Vista solo lectura)
-        document.querySelectorAll('input, select, textarea').forEach(elem => elem.disabled = true);
-        
+        if (document.querySelector('.session-bar')) {
+            document.querySelector('.session-bar').style.display = 'none';
+        }
+        if (document.querySelector('.history-section')) {
+            document.querySelector('.history-section').style.display = 'none';
+        }
+
+        // 2. Ocultar botones de acciones y limpiar firma
+        if (document.querySelector('.btn-container')) {
+            document.querySelector('.btn-container').style.display = 'none';
+        }
+        if (document.querySelector('.btn-clear')) {
+            document.querySelector('.btn-clear').style.display = 'none';
+        }
+        if (document.querySelector('.photo-upload-input')) {
+            document.querySelector('.photo-upload-input').style.display = 'none';
+        }
+
+        // 3. Deshabilitar interactividad en la firma (Canvas)
+        const canvasElem = document.getElementById('signatureCanvas');
+        if (canvasElem) {
+            canvasElem.style.pointerEvents = 'none';
+            canvasElem.style.cursor = 'default';
+        }
+
+        // 4. Bloquear edición en todos los campos de texto y selección
+        setTimeout(() => {
+            document.querySelectorAll('input, select, textarea').forEach(elem => {
+                elem.disabled = true;
+            });
+        }, 300);
+
         escucharBaseDeDatos();
     } else {
-        // Flujo normal para el técnico
+        // Flujo habitual para el técnico logueado
         auth.onAuthStateChanged((user) => {
             const loginOverlay = document.getElementById('loginOverlay');
             const usuarioActivoText = document.getElementById('usuarioActivo');
