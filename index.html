@@ -381,108 +381,104 @@
         }
 
         th { background-color: #0056b3; color: white; }
+/* REGLAS EXCLUSIVAS PARA IMPRESIÓN Y PDF (CORREGIDO Y ESTABLE) */
+@media print {
+    @page {
+        size: letter portrait;
+        margin: 0;
+    }
 
-        /* REGLAS EXCLUSIVAS PARA IMPRESIÓN Y PDF (OPTIMIZADO MÓVIL Y PC) */
-        @media print {
-            @page {
-                size: letter portrait;
-                margin: 0;
-            }
+    html, body {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: white !important;
+        background-image: url('membrete.png') !important; 
+        background-repeat: no-repeat !important;
+        background-position: center top !important;
+        background-size: 100% 100% !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 
-            html, body {
-                width: 100% !important;
-                height: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                background-color: white !important;
-                background-image: url('membrete.png') !important; 
-                background-repeat: no-repeat !important;
-                background-position: top center !important;
-                background-size: 100% 100% !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                overflow: hidden !important;
-            }
+    .session-bar, .login-overlay, .photo-upload-input, .btn-gps, .btn-delete-photo, #linkMapsContainer, #statusGPS {
+        display: none !important;
+    }
 
-            .session-bar, .login-overlay, .photo-upload-input, .btn-gps, .btn-delete-photo {
-                display: none !important;
-            }
+    .container {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        padding: 35mm 16mm 20mm 16mm !important; /* Relleno seguro para calzar la hoja de fondo */
+        box-sizing: border-box !important;
+        display: block !important; /* Corregido: Regresa al flujo normal del documento */
+    }
 
-            .container {
-                background: transparent !important;
-                box-shadow: none !important;
-                border: none !important;
-                border-radius: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                height: 100vh !important;
-                padding: 28mm 14mm 15mm 14mm !important;
-                box-sizing: border-box !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: space-between !important;
-            }
+    .section-title {
+        margin-top: 6px !important;
+        margin-bottom: 4px !important;
+        padding: 3px 6px !important;
+        font-size: 12px !important;
+    }
 
-            .section-title {
-                margin-top: 4px !important;
-                margin-bottom: 3px !important;
-                padding: 2px 5px !important;
-                font-size: 11px !important;
-            }
+    .form-group label {
+        font-size: 10px !important;
+        margin-bottom: 2px !important;
+    }
 
-            .form-group label {
-                font-size: 9px !important;
-                margin-bottom: 1px !important;
-            }
+    .form-group input, 
+    .form-group select {
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+        border: 1px solid #aaa !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+    }
 
-            .form-group input, 
-            .form-group select {
-                padding: 3px 5px !important;
-                font-size: 10px !important;
-                border: 1px solid #aaa !important;
-                background: rgba(255, 255, 255, 0.85) !important;
-            }
+    .form-group textarea {
+        display: none !important;
+    }
 
-            .form-group textarea {
-                display: none !important;
-            }
+    .print-text-mirror {
+        display: block !important;
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+        border: 1px solid #aaa !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+    }
 
-            .print-text-mirror {
-                display: block !important;
-                padding: 3px 5px !important;
-                font-size: 10px !important;
-                border: 1px solid #aaa !important;
-                background: rgba(255, 255, 255, 0.85) !important;
-            }
+    .header {
+        margin-bottom: 6px !important;
+        padding-bottom: 4px !important;
+    }
 
-            .header {
-                margin-bottom: 4px !important;
-                padding-bottom: 2px !important;
-            }
+    .header .folio-box input {
+        border: none !important;
+        background: transparent !important;
+    }
 
-            .header .folio-box input {
-                border: none !important;
-                background: transparent !important;
-            }
+    canvas {
+        border: 1px solid #000 !important;
+        max-height: 60px !important; 
+        width: 250px !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+    }
 
-            canvas {
-                border: 1px solid #000 !important;
-                max-height: 55px !important; 
-                width: 240px !important;
-                background: rgba(255, 255, 255, 0.85) !important;
-            }
+    .photo-thumb-box {
+        width: 65px !important;
+        height: 65px !important;
+    }
 
-            .photo-thumb-box {
-                width: 60px !important;
-                height: 60px !important;
-            }
-
-            .btn-container, 
-            .btn-clear, 
-            .history-section {
-                display: none !important;
-            }
-        }
+    .btn-container, 
+    .btn-clear, 
+    .history-section {
+        display: none !important;
+    }
+}
     </style>
 </head>
 <body>
