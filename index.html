@@ -1298,6 +1298,8 @@
         const ultimosCinco = reportesGlobales.slice(0, 5);
         const reportesAnteriores = reportesGlobales.slice(5);
 
+         //<button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
+        
         ultimosCinco.forEach(reporte => {
             const tieneFotos = reporte.fotosUrls && reporte.fotosUrls.length > 0 ? " 📷" : "";
             const tieneGPS = reporte.urlMaps ? " 📍" : "";
@@ -1309,7 +1311,7 @@
                 <td>${reporte.tecnico || '-'}</td>
                 <td>
                     <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer; padding: 4px 8px;">Cargar</button>
-                    <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
+                   
                 </td>
             `;
             tabla.appendChild(fila);
