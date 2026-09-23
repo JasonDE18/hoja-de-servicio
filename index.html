@@ -269,7 +269,6 @@
             height: 100%;
         }
 
-        /* BOTÓN PARA BORRAR FOTO */
         .btn-delete-photo {
             position: absolute;
             top: 3px;
@@ -383,7 +382,7 @@
 
         th { background-color: #0056b3; color: white; }
 
-        /* REGLAS EXCLUSIVAS PARA IMPRESIÓN Y PDF */
+        /* REGLAS EXCLUSIVAS PARA IMPRESIÓN Y PDF (OPTIMIZADO MÓVIL Y PC) */
         @media print {
             @page {
                 size: letter portrait;
@@ -402,6 +401,7 @@
                 background-size: 100% 100% !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                overflow: hidden !important;
             }
 
             .session-bar, .login-overlay, .photo-upload-input, .btn-gps, .btn-delete-photo {
@@ -415,27 +415,30 @@
                 border-radius: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                height: auto !important;
-                padding: 38mm 18mm 28mm 18mm !important; 
+                height: 100vh !important;
+                padding: 28mm 14mm 15mm 14mm !important;
                 box-sizing: border-box !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
             }
 
             .section-title {
-                margin-top: 6px !important;
-                margin-bottom: 4px !important;
-                padding: 3px 6px !important;
-                font-size: 12px !important;
+                margin-top: 4px !important;
+                margin-bottom: 3px !important;
+                padding: 2px 5px !important;
+                font-size: 11px !important;
             }
 
             .form-group label {
-                font-size: 10px !important;
-                margin-bottom: 2px !important;
+                font-size: 9px !important;
+                margin-bottom: 1px !important;
             }
 
             .form-group input, 
             .form-group select {
-                padding: 4px 6px !important;
-                font-size: 11px !important;
+                padding: 3px 5px !important;
+                font-size: 10px !important;
                 border: 1px solid #aaa !important;
                 background: rgba(255, 255, 255, 0.85) !important;
             }
@@ -446,15 +449,15 @@
 
             .print-text-mirror {
                 display: block !important;
-                padding: 4px 6px !important;
-                font-size: 11px !important;
+                padding: 3px 5px !important;
+                font-size: 10px !important;
                 border: 1px solid #aaa !important;
                 background: rgba(255, 255, 255, 0.85) !important;
             }
 
             .header {
-                margin-bottom: 6px !important;
-                padding-bottom: 4px !important;
+                margin-bottom: 4px !important;
+                padding-bottom: 2px !important;
             }
 
             .header .folio-box input {
@@ -464,14 +467,14 @@
 
             canvas {
                 border: 1px solid #000 !important;
-                max-height: 65px !important; 
-                width: 260px !important;
+                max-height: 55px !important; 
+                width: 240px !important;
                 background: rgba(255, 255, 255, 0.85) !important;
             }
 
             .photo-thumb-box {
-                width: 70px !important;
-                height: 70px !important;
+                width: 60px !important;
+                height: 60px !important;
             }
 
             .btn-container, 
@@ -632,12 +635,15 @@
     </form>
 </div>
 
+<!-- HISTORIAL DE REPORTES EN LA NUBE (ÚLTIMOS 5 + DESPLEGABLE) -->
 <div class="history-section">
     <div class="history-header">
         <h2 style="margin:0; font-size: 18px;">Historial de Reportes en la Nube</h2>
         <span id="syncStatus" class="status-sync">🔄 Esperando inicio de sesión...</span>
     </div>
-    <table>
+
+    <!-- TABLA DE LOS ÚLTIMOS 5 REPORTES -->
+    <table style="margin-bottom: 15px;">
         <thead>
             <tr>
                 <th>Folio</th>
@@ -651,6 +657,21 @@
             <!-- Carga dinámica -->
         </tbody>
     </table>
+
+    <!-- DESPLEGABLE PARA REPORTES ANTERIORES -->
+    <div id="contenedorReportesAnteriores" style="display: none; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #ddd; margin-top: 10px;">
+        <label for="selectAnteriores" style="font-size: 13px; font-weight: bold; color: #444; display: block; margin-bottom: 5px;">
+            📁 Consultar reportes anteriores:
+        </label>
+        <div style="display: flex; gap: 8px;">
+            <select id="selectAnteriores" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                <option value="">-- Selecciona un reporte anterior --</option>
+            </select>
+            <button type="button" onclick="cargarDesdeDesplegable()" style="background: #0056b3; color: white; border: none; padding: 8px 14px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                Cargar
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -1257,20 +1278,27 @@
         return urlsFinales;
     }
 
+    // --- ACTUALIZACIÓN DE TABLA: ÚLTIMOS 5 + DESPLEGABLE DE ANTERIORES ---
     function actualizarTabla() {
         const tabla = document.getElementById('tablaHistorial');
+        const selectAnteriores = document.getElementById('selectAnteriores');
+        const contenedorAnteriores = document.getElementById('contenedorReportesAnteriores');
+
         tabla.innerHTML = "";
+        selectAnteriores.innerHTML = '<option value="">-- Selecciona un reporte anterior --</option>';
 
         if (reportesGlobales.length === 0) {
             tabla.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No hay reportes guardados en la nube.</td></tr>";
+            contenedorAnteriores.style.display = 'none';
             return;
         }
 
         reportesGlobales.sort((a, b) => b.folioNum - a.folioNum);
 
-        //<button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
+        const ultimosCinco = reportesGlobales.slice(0, 5);
+        const reportesAnteriores = reportesGlobales.slice(5);
 
-        reportesGlobales.forEach(reporte => {
+        ultimosCinco.forEach(reporte => {
             const tieneFotos = reporte.fotosUrls && reporte.fotosUrls.length > 0 ? " 📷" : "";
             const tieneGPS = reporte.urlMaps ? " 📍" : "";
             const fila = document.createElement('tr');
@@ -1280,12 +1308,33 @@
                 <td>${reporte.cliente || '-'}</td>
                 <td>${reporte.tecnico || '-'}</td>
                 <td>
-                    <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer;">Cargar</button>
-                    
+                    <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer; padding: 4px 8px;">Cargar</button>
+                    <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
                 </td>
             `;
             tabla.appendChild(fila);
         });
+
+        if (reportesAnteriores.length > 0) {
+            contenedorAnteriores.style.display = 'block';
+            reportesAnteriores.forEach(reporte => {
+                const option = document.createElement('option');
+                option.value = reporte.folio;
+                option.textContent = `Folio: ${reporte.folio} | ${reporte.fecha} | ${reporte.cliente || 'Sin cliente'} (${reporte.tecnico || 'Técnico'})`;
+                selectAnteriores.appendChild(option);
+            });
+        } else {
+            contenedorAnteriores.style.display = 'none';
+        }
+    }
+
+    function cargarDesdeDesplegable() {
+        const folioSeleccionado = document.getElementById('selectAnteriores').value;
+        if (folioSeleccionado) {
+            cargarReporte(folioSeleccionado);
+        } else {
+            alert("Por favor selecciona un reporte de la lista.");
+        }
     }
 
     function eliminarReporte(folioStr) {
