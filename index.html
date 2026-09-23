@@ -269,6 +269,32 @@
             height: 100%;
         }
 
+        /* BOTÓN PARA BORRAR FOTO */
+        .btn-delete-photo {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .btn-delete-photo:hover {
+            background: #dc3545;
+            transform: scale(1.1);
+        }
+
         /* Área de Firma */
         .signature-container {
             display: flex;
@@ -378,7 +404,7 @@
                 print-color-adjust: exact !important;
             }
 
-            .session-bar, .login-overlay, .photo-upload-input, .btn-gps {
+            .session-bar, .login-overlay, .photo-upload-input, .btn-gps, .btn-delete-photo {
                 display: none !important;
             }
 
@@ -517,7 +543,6 @@
                 <input type="tel" id="telefonoCliente" placeholder="Ej: 9991234567">
             </div>
             
-            <!-- CAMPO DE UBICACIÓN CON BOTÓN GPS INTEGRADOM -->
             <div class="form-group">
                 <label for="ubicacion">Ubicación / Sucursal:</label>
                 <div style="display: flex; gap: 5px;">
@@ -652,7 +677,6 @@
     let fotosParaSubir = [];
     let urlsFotosExistentes = [];
 
-    // Generar Token Aleatorio Único
     function generarToken() {
         return Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
     }
@@ -678,7 +702,6 @@
                 const urlMaps = `https://www.google.com/maps?q=${lat},${lng}`;
                 document.getElementById('urlMaps').value = urlMaps;
 
-                // Mostrar el link directo
                 const linkContainer = document.getElementById('linkMapsContainer');
                 const linkView = document.getElementById('linkMapsView');
                 linkView.href = urlMaps;
@@ -701,7 +724,6 @@
         );
     }
 
-    // AUTO-AJUSTE DINÁMICO EN PANTALLA Y SINCRO CON ESPEJO DE IMPRESIÓN
     function autoAjustarTextarea(elemento) {
         if (!elemento) return;
         
@@ -774,7 +796,6 @@
         const esCliente = urlParams.has('token');
 
         if (esCliente) {
-            // Ocultar elementos de administración si accede un cliente
             document.getElementById('loginOverlay').style.display = 'none';
             if (document.querySelector('.session-bar')) {
                 document.querySelector('.session-bar').style.display = 'none';
@@ -935,6 +956,61 @@
         }
     }
 
+    function renderizarFotosExistentes() {
+        const contenedor = document.getElementById('contenedorVistaPrevia');
+        contenedor.innerHTML = "";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const esCliente = urlParams.has('token');
+
+        urlsFotosExistentes.forEach((url, index) => {
+            const box = document.createElement('div');
+            box.className = 'photo-thumb-box';
+
+            let botonEliminarHTML = "";
+            if (!esCliente) {
+                botonEliminarHTML = `
+                    <button type="button" onclick="eliminarFotoExistente(${index})" title="Eliminar foto" class="btn-delete-photo">
+                        ✖
+                    </button>
+                `;
+            }
+
+            box.innerHTML = `
+                <a href="${url}" target="_blank"><img src="${url}" alt="Evidencia"></a>
+                ${botonEliminarHTML}
+            `;
+            contenedor.appendChild(box);
+        });
+    }
+
+    async function eliminarFotoExistente(index) {
+        const urlAEliminar = urlsFotosExistentes[index];
+        const folioStr = document.getElementById('folio').value;
+
+        if (!confirm("¿Estás seguro de que deseas eliminar esta fotografía de evidencia?")) {
+            return;
+        }
+
+        try {
+            if (urlAEliminar.includes('firebasestorage.googleapis.com')) {
+                const refStorage = storage.refFromURL(urlAEliminar);
+                await refStorage.delete();
+            }
+
+            urlsFotosExistentes.splice(index, 1);
+            await db.ref('reportes/' + folioStr + '/fotosUrls').set(urlsFotosExistentes);
+            renderizarFotosExistentes();
+            alert("Fotografía eliminada correctamente.");
+
+        } catch (error) {
+            console.error("Error al eliminar la fotografía:", error);
+            urlsFotosExistentes.splice(index, 1);
+            await db.ref('reportes/' + folioStr + '/fotosUrls').set(urlsFotosExistentes);
+            renderizarFotosExistentes();
+        }
+    }
+
     function cargarReporte(folioStr) {
         const reporte = reportesGlobales.find(r => r.folio === folioStr);
 
@@ -947,7 +1023,6 @@
             document.getElementById('telefonoCliente').value = reporte.telefonoCliente || '';
             document.getElementById('ubicacion').value = reporte.ubicacion;
             
-            // Cargar enlace de Maps si existe
             const urlMaps = reporte.urlMaps || '';
             document.getElementById('urlMaps').value = urlMaps;
             const linkContainer = document.getElementById('linkMapsContainer');
@@ -973,19 +1048,9 @@
             autoAjustarTextarea(descElem);
             autoAjustarTextarea(obsElem);
 
-            const contenedor = document.getElementById('contenedorVistaPrevia');
-            contenedor.innerHTML = "";
-            fotosParaSubir = [];
             urlsFotosExistentes = reporte.fotosUrls || [];
-
-            if (urlsFotosExistentes.length > 0) {
-                urlsFotosExistentes.forEach(url => {
-                    const box = document.createElement('div');
-                    box.className = 'photo-thumb-box';
-                    box.innerHTML = `<a href="${url}" target="_blank"><img src="${url}" alt="Evidencia"></a>`;
-                    contenedor.appendChild(box);
-                });
-            }
+            fotosParaSubir = [];
+            renderizarFotosExistentes();
 
             limpiarFirma();
             if (reporte.firmaDataURL) {
@@ -1216,6 +1281,7 @@
                 <td>${reporte.tecnico || '-'}</td>
                 <td>
                     <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer;">Cargar</button>
+                    
                 </td>
             `;
             tabla.appendChild(fila);
