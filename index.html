@@ -381,104 +381,115 @@
         }
 
         th { background-color: #0056b3; color: white; }
-/* REGLAS EXCLUSIVAS PARA IMPRESIÓN Y PDF (CORREGIDO Y ESTABLE) */
-@media print {
-    @page {
-        size: letter portrait;
-        margin: 0;
-    }
 
-    html, body {
-        width: 100% !important;
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background-color: white !important;
-        background-image: url('membrete.png') !important; 
-        background-repeat: no-repeat !important;
-        background-position: center top !important;
-        background-size: 100% 100% !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
+        /* REGLAS EXCLUSIVAS PARA IMPRESIÓN Y PDF */
+        @media print {
+            @page {
+                size: letter portrait;
+                margin: 0;
+            }
 
-    .session-bar, .login-overlay, .photo-upload-input, .btn-gps, .btn-delete-photo, #linkMapsContainer, #statusGPS {
-        display: none !important;
-    }
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: white !important;
+                background-image: url('membrete.png') !important; 
+                background-repeat: no-repeat !important;
+                background-position: top center !important;
+                background-size: 100% 100% !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
 
-    .container {
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        height: auto !important;
-        padding: 35mm 16mm 20mm 16mm !important; /* Relleno seguro para calzar la hoja de fondo */
-        box-sizing: border-box !important;
-        display: block !important; /* Corregido: Regresa al flujo normal del documento */
-    }
+            .session-bar, .login-overlay, .photo-upload-input, .btn-gps, .btn-delete-photo, #linkMapsContainer, #statusGPS {
+                display: none !important;
+            }
 
-    .section-title {
-        margin-top: 6px !important;
-        margin-bottom: 4px !important;
-        padding: 3px 6px !important;
-        font-size: 12px !important;
-    }
+            /* Por defecto, oculta el costo en la impresión para clientes y otros usuarios */
+            #campoCosto {
+                display: none !important;
+            }
 
-    .form-group label {
-        font-size: 10px !important;
-        margin-bottom: 2px !important;
-    }
+            /* MOSTRAR COSTO EN IMPRESIÓN SOLO SI LOGUEÓ PROYECTOS */
+            body.es-proyectos #campoCosto {
+                display: flex !important;
+            }
 
-    .form-group input, 
-    .form-group select {
-        padding: 4px 6px !important;
-        font-size: 11px !important;
-        border: 1px solid #aaa !important;
-        background: rgba(255, 255, 255, 0.85) !important;
-    }
+            .container {
+                background: transparent !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                padding: 35mm 16mm 20mm 16mm !important;
+                box-sizing: border-box !important;
+                display: block !important;
+            }
 
-    .form-group textarea {
-        display: none !important;
-    }
+            .section-title {
+                margin-top: 6px !important;
+                margin-bottom: 4px !important;
+                padding: 3px 6px !important;
+                font-size: 12px !important;
+            }
 
-    .print-text-mirror {
-        display: block !important;
-        padding: 4px 6px !important;
-        font-size: 11px !important;
-        border: 1px solid #aaa !important;
-        background: rgba(255, 255, 255, 0.85) !important;
-    }
+            .form-group label {
+                font-size: 10px !important;
+                margin-bottom: 2px !important;
+            }
 
-    .header {
-        margin-bottom: 6px !important;
-        padding-bottom: 4px !important;
-    }
+            .form-group input, 
+            .form-group select {
+                padding: 4px 6px !important;
+                font-size: 11px !important;
+                border: 1px solid #aaa !important;
+                background: rgba(255, 255, 255, 0.85) !important;
+            }
 
-    .header .folio-box input {
-        border: none !important;
-        background: transparent !important;
-    }
+            .form-group textarea {
+                display: none !important;
+            }
 
-    canvas {
-        border: 1px solid #000 !important;
-        max-height: 60px !important; 
-        width: 250px !important;
-        background: rgba(255, 255, 255, 0.85) !important;
-    }
+            .print-text-mirror {
+                display: block !important;
+                padding: 4px 6px !important;
+                font-size: 11px !important;
+                border: 1px solid #aaa !important;
+                background: rgba(255, 255, 255, 0.85) !important;
+            }
 
-    .photo-thumb-box {
-        width: 65px !important;
-        height: 65px !important;
-    }
+            .header {
+                margin-bottom: 6px !important;
+                padding-bottom: 4px !important;
+            }
 
-    .btn-container, 
-    .btn-clear, 
-    .history-section {
-        display: none !important;
-    }
-}
+            .header .folio-box input {
+                border: none !important;
+                background: transparent !important;
+            }
+
+            canvas {
+                border: 1px solid #000 !important;
+                max-height: 60px !important; 
+                width: 250px !important;
+                background: rgba(255, 255, 255, 0.85) !important;
+            }
+
+            .photo-thumb-box {
+                width: 65px !important;
+                height: 65px !important;
+            }
+
+            .btn-container, 
+            .btn-clear, 
+            .history-section {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -563,6 +574,12 @@
                 <label for="tecnico">Atendido por (Técnico):</label>
                 <input type="text" id="tecnico" placeholder="Nombre del técnico">
             </div>
+
+            <!-- CAMPO ESPECIAL: COSTO (OCULTO POR DEFECTO) -->
+            <div class="form-group" id="campoCosto" style="display: none;">
+                <label for="costoServicio" style="color: #28a745; font-weight: bold;">💵 Costo del Servicio ($ MXN):</label>
+                <input type="number" step="0.01" id="costoServicio" placeholder="Ej: 1500.00">
+            </div>
         </div>
 
         <div class="section-title">2. Descripción del Servicio y Trabajos Realizados</div>
@@ -631,14 +648,13 @@
     </form>
 </div>
 
-<!-- HISTORIAL DE REPORTES EN LA NUBE (ÚLTIMOS 5 + DESPLEGABLE) -->
+<!-- HISTORIAL DE REPORTES EN LA NUBE -->
 <div class="history-section">
     <div class="history-header">
         <h2 style="margin:0; font-size: 18px;">Historial de Reportes en la Nube</h2>
         <span id="syncStatus" class="status-sync">🔄 Esperando inicio de sesión...</span>
     </div>
 
-    <!-- TABLA DE LOS ÚLTIMOS 5 REPORTES -->
     <table style="margin-bottom: 15px;">
         <thead>
             <tr>
@@ -654,7 +670,6 @@
         </tbody>
     </table>
 
-    <!-- DESPLEGABLE PARA REPORTES ANTERIORES -->
     <div id="contenedorReportesAnteriores" style="display: none; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #ddd; margin-top: 10px;">
         <label for="selectAnteriores" style="font-size: 13px; font-weight: bold; color: #444; display: block; margin-bottom: 5px;">
             📁 Consultar reportes anteriores:
@@ -698,7 +713,7 @@
         return Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
     }
 
-    // --- FUNCIÓN DE GEOLOCALIZACIÓN GPS ---
+    // --- GEOLOCALIZACIÓN GPS ---
     function obtenerUbicacionGPS() {
         const statusGPS = document.getElementById('statusGPS');
         
@@ -833,6 +848,10 @@
                 document.querySelector('.btn-gps').style.display = 'none';
             }
 
+            // Ocultar campo costo para vista de cliente
+            document.getElementById('campoCosto').style.display = 'none';
+            document.body.classList.remove('es-proyectos');
+
             const canvasElem = document.getElementById('signatureCanvas');
             if (canvasElem) {
                 canvasElem.style.pointerEvents = 'none';
@@ -859,6 +878,16 @@
                     const campoTecnico = document.getElementById('tecnico');
                     if(!campoTecnico.value) {
                         campoTecnico.value = nombreSugerido.toUpperCase();
+                    }
+
+                    // HABILITAR CAMPO DE COSTO PANTALLA E IMPRESIÓN SOLO PARA PROYECTOS
+                    const campoCosto = document.getElementById('campoCosto');
+                    if (user.email.toLowerCase() === 'proyectos@gova.mx') {
+                        campoCosto.style.display = 'flex';
+                        document.body.classList.add('es-proyectos'); // Clase que habilita la impresión
+                    } else {
+                        campoCosto.style.display = 'none';
+                        document.body.classList.remove('es-proyectos');
                     }
 
                     escucharBaseDeDatos();
@@ -952,6 +981,7 @@
                 ubicacion: document.getElementById('ubicacion').value,
                 urlMaps: document.getElementById('urlMaps').value,
                 tecnico: document.getElementById('tecnico').value,
+                costoServicio: document.getElementById('costoServicio').value || '',
                 tipoServicio: document.getElementById('tipoServicio').value,
                 descripcion: document.getElementById('descripcion').value,
                 observaciones: document.getElementById('observaciones').value,
@@ -1052,6 +1082,7 @@
             }
 
             document.getElementById('tecnico').value = reporte.tecnico;
+            document.getElementById('costoServicio').value = reporte.costoServicio || '';
             document.getElementById('tipoServicio').value = reporte.tipoServicio;
 
             const descElem = document.getElementById('descripcion');
@@ -1084,6 +1115,7 @@
         document.getElementById('hojaServicio').reset();
         document.getElementById('tokenAcceso').value = '';
         document.getElementById('urlMaps').value = '';
+        document.getElementById('costoServicio').value = '';
         document.getElementById('linkMapsContainer').style.display = 'none';
         document.getElementById('statusGPS').style.display = 'none';
         document.getElementById('fecha').valueAsDate = new Date();
@@ -1305,13 +1337,11 @@
                 <td>${reporte.tecnico || '-'}</td>
                 <td>
                     <button onclick="cargarReporte('${reporte.folio}')" style="cursor:pointer; padding: 4px 8px;">Cargar</button>
-                    
+                    <button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
                 </td>
             `;
             tabla.appendChild(fila);
         });
-
-            //<button onclick="eliminarReporte('${reporte.folio}')" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">X</button>
 
         if (reportesAnteriores.length > 0) {
             contenedorAnteriores.style.display = 'block';
